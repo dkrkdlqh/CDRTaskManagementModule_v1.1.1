@@ -63,119 +63,211 @@ class MainController():
         while True:
 
             # TMM 종료 이벤트 발생
-            if MainData.isTerminatedTMMProcess == True:
+            if MainData.isTerminatedTMMProcess:
                 break
-            
-            readJsonData    :dict           = None
-            writeJsonData   :dict           = None
-            curTime         :float          = time.time()
-            
-            
-            if self.__mainQueue.empty() == False:
-            
-                sysQueueData    :SysQueueData   = self.__mainQueue.get()  
-                queueId         :str            = sysQueueData.getId()
+
+            try:
+                # 큐에서 데이터를 가져오되, 1초 동안 대기 (없으면 TimeoutError 발생)
+                sysQueueData: SysQueueData = self.__mainQueue.get(timeout=1)
+                queueId: str = sysQueueData.getId()
 
                 if queueId == SysQueueData.RECEIVE_TPM_DATA:
-
                     readJsonData = sysQueueData.getData()
 
                     if TPMCommKeyword.KEY_METHOD in readJsonData:
+                        reqMethod: str = readJsonData[TPMCommKeyword.KEY_METHOD]
 
-                        reqMethod   :str = readJsonData[TPMCommKeyword.KEY_METHOD]
-
-                        # TPM 프로그램 실행 명령 ---------------------------------------------------------
+                        # TPM 프로그램 실행 명령
                         if reqMethod == TPMCommKeyword.METHOD_PLAY_PROGRAM:
-                            
                             with open(Config.PROGRAM_FILE_PATH, 'w') as file:
                                 file.write(json.dumps(readJsonData[TPMCommKeyword.KEY_PARAMS]))
 
                             CDRLog.print(f'{Config.PROGRAM_FILE_PATH} write complete')
 
-                            programData :dict = CDRUtil.loadJsonFile(Config.PROGRAM_FILE_PATH)
-                            
-                            # TPM에서 전달 받은 코드 실행
+                            programData: dict = CDRUtil.loadJsonFile(Config.PROGRAM_FILE_PATH)
                             self.__tpmProgramManager.playProgram(programData)
 
-                        # TPM 프로그램 일시정지 명령 -----------------------------------------------------
+                        # TPM 프로그램 일시정지 명령
                         elif reqMethod == TPMCommKeyword.METHOD_PAUSE_PROGRAM:
-                            
                             MainData.isPausedTPMProgram = True
-                            
-                            # 프로그램 실행 요청에 대한 응답 전달
                             self.__sendResponse(reqMethod)
-                        
-                        # TPM 프로그램 재개 명령 ---------------------------------------------------------
+
+                        # TPM 프로그램 재개 명령
                         elif reqMethod == TPMCommKeyword.METHOD_RESUME_PROGRAM:
-                            
                             MainData.isPausedTPMProgram = False
-                            
-                            # 프로그램 실행 요청에 대한 응답 전달
                             self.__sendResponse(reqMethod)
-                        
-                        # TPM 프로그램 정지 명령 ---------------------------------------------------------
+
+                        # TPM 프로그램 정지 명령
                         elif reqMethod == TPMCommKeyword.METHOD_STOP_PROGRAM:
-                            
                             MainData.isRunningTPMProgram = False
-
-                            # 프로그램 실행 요청에 대한 응답 전달
                             self.__sendResponse(reqMethod)
-                        
-                        # 시스템 정보 요청 명령 ----------------------------------------------------------
+
+                        # 시스템 정보 요청 명령
                         elif reqMethod == TPMCommKeyword.METHOD_GET_SYS_INFO:
-                            
-                            sysFuncList             :list[SysFuncData]  = self.__tpmSysFuncManager.getSysFuncList()    
-                            sysFuncJsonDataList     :list[dict]         = []                        
+                            sysFuncList: list[SysFuncData] = self.__tpmSysFuncManager.getSysFuncList()
+                            sysFuncJsonDataList: list[dict] = [func.toJson() for func in sysFuncList]
 
-                            for i in range(len(sysFuncList)):
-                                sysFuncJsonDataList.append(sysFuncList[i].toJson())
-
-                            sysInfoJsonData    :dict = {
-                                                            "method" : reqMethod, 
-                                                            "values" : 
-                                                            {
-                                                                "version"       : Config.VERSION,
-                                                                "sysFuncList"   : sysFuncJsonDataList
-                                                            }, 
-                                                        }
+                            sysInfoJsonData: dict = {
+                                "method": reqMethod,
+                                "values": {
+                                    "version": Config.VERSION,
+                                    "sysFuncList": sysFuncJsonDataList
+                                },
+                            }
 
                             self.__tpmCommManager.writeCommData(sysInfoJsonData)
-
-                            # 해당 데이터 보내고 실시간 데이터 주기적으로 전송하기
-                            self.__lastPingTime = curTime
+                            self.__lastPingTime = time.time()
 
                 elif queueId == SysQueueData.CLOSED_TPM_SERVER:
-
-                    if self.__tpmCommManager != None:
+                    if self.__tpmCommManager:
                         self.__tpmCommManager.openServer()
 
                 elif queueId == SysQueueData.ERR_COMM_VAR_CONNECTION:
-                    
-                    # 에러 발생 -> 현재 진행 중인 프로그램 종료
                     MainData.isRunningTPMProgram = False
+                    writeJsonData = {
+                        TPMCommKeyword.KEY_METHOD: TPMCommKeyword.METHOD_REALTIME_INFO,
+                        TPMCommKeyword.KEY_PARAMS: {"sysEvent": sysQueueData.getData()},
+                    }
+                    self.__tpmCommManager.writeCommData(writeJsonData)
+                    self.__lastPingTime = time.time()
 
-                    writeJsonData           = {}
-                    writeJsonData[TPMCommKeyword.KEY_METHOD] = TPMCommKeyword.METHOD_REALTIME_INFO
-                    writeJsonData[TPMCommKeyword.KEY_PARAMS] = {"sysEvent" : sysQueueData.getData()}
-
+            except Exception as e:
+                # 큐에서 TimeoutError 발생 시, 주기적인 작업 처리
+                curTime: float = time.time()
+                if self.__lastPingTime != 0.0 and (curTime - self.__lastPingTime) > 1:
+                    writeJsonData = {
+                        TPMCommKeyword.KEY_METHOD: TPMCommKeyword.METHOD_REALTIME_INFO,
+                        TPMCommKeyword.KEY_PARAMS: self.__tpmProgramManager.makeRealtimeProgramInfoData(),
+                    }
                     self.__tpmCommManager.writeCommData(writeJsonData)
                     self.__lastPingTime = curTime
 
-            
-            if self.__lastPingTime != 0.0 and (curTime - self.__lastPingTime) > 1:
+            except Queue.Empty:
+                # 큐가 비어 있을 경우, 루프를 잠시 대기
+                time.sleep(0.1)
 
-                # 주기적으로(1초) TPM에 실시간 데이터 전송
+        CDRLog.print("============ __computeThreadHandler terminated...")
+    # def __computeThreadHandler(self):
+    #     '''
+    #     ### 주요 연산 처리를 담당하는 쓰레드
+    #     '''
+        
+    #     while True:
+
+    #         # TMM 종료 이벤트 발생
+    #         if MainData.isTerminatedTMMProcess == True:
+    #             break
+            
+    #         readJsonData    :dict           = None
+    #         writeJsonData   :dict           = None
+    #         curTime         :float          = time.time()
+            
+            
+    #         if self.__mainQueue.empty() == False:
+            
+    #             sysQueueData    :SysQueueData   = self.__mainQueue.get()  
+    #             queueId         :str            = sysQueueData.getId()
+
+    #             if queueId == SysQueueData.RECEIVE_TPM_DATA:
+
+    #                 readJsonData = sysQueueData.getData()
+
+    #                 if TPMCommKeyword.KEY_METHOD in readJsonData:
+
+    #                     reqMethod   :str = readJsonData[TPMCommKeyword.KEY_METHOD]
+
+    #                     # TPM 프로그램 실행 명령 ---------------------------------------------------------
+    #                     if reqMethod == TPMCommKeyword.METHOD_PLAY_PROGRAM:
+                            
+    #                         with open(Config.PROGRAM_FILE_PATH, 'w') as file:
+    #                             file.write(json.dumps(readJsonData[TPMCommKeyword.KEY_PARAMS]))
+
+    #                         CDRLog.print(f'{Config.PROGRAM_FILE_PATH} write complete')
+
+    #                         programData :dict = CDRUtil.loadJsonFile(Config.PROGRAM_FILE_PATH)
+                            
+    #                         # TPM에서 전달 받은 코드 실행
+    #                         self.__tpmProgramManager.playProgram(programData)
+
+    #                     # TPM 프로그램 일시정지 명령 -----------------------------------------------------
+    #                     elif reqMethod == TPMCommKeyword.METHOD_PAUSE_PROGRAM:
+                            
+    #                         MainData.isPausedTPMProgram = True
+                            
+    #                         # 프로그램 실행 요청에 대한 응답 전달
+    #                         self.__sendResponse(reqMethod)
+                        
+    #                     # TPM 프로그램 재개 명령 ---------------------------------------------------------
+    #                     elif reqMethod == TPMCommKeyword.METHOD_RESUME_PROGRAM:
+                            
+    #                         MainData.isPausedTPMProgram = False
+                            
+    #                         # 프로그램 실행 요청에 대한 응답 전달
+    #                         self.__sendResponse(reqMethod)
+                        
+    #                     # TPM 프로그램 정지 명령 ---------------------------------------------------------
+    #                     elif reqMethod == TPMCommKeyword.METHOD_STOP_PROGRAM:
+                            
+    #                         MainData.isRunningTPMProgram = False
+
+    #                         # 프로그램 실행 요청에 대한 응답 전달
+    #                         self.__sendResponse(reqMethod)
+                        
+    #                     # 시스템 정보 요청 명령 ----------------------------------------------------------
+    #                     elif reqMethod == TPMCommKeyword.METHOD_GET_SYS_INFO:
+                            
+    #                         sysFuncList             :list[SysFuncData]  = self.__tpmSysFuncManager.getSysFuncList()    
+    #                         sysFuncJsonDataList     :list[dict]         = []                        
+
+    #                         for i in range(len(sysFuncList)):
+    #                             sysFuncJsonDataList.append(sysFuncList[i].toJson())
+
+    #                         sysInfoJsonData    :dict = {
+    #                                                         "method" : reqMethod, 
+    #                                                         "values" : 
+    #                                                         {
+    #                                                             "version"       : Config.VERSION,
+    #                                                             "sysFuncList"   : sysFuncJsonDataList
+    #                                                         }, 
+    #                                                     }
+
+    #                         self.__tpmCommManager.writeCommData(sysInfoJsonData)
+
+    #                         # 해당 데이터 보내고 실시간 데이터 주기적으로 전송하기
+    #                         self.__lastPingTime = curTime
+
+    #             elif queueId == SysQueueData.CLOSED_TPM_SERVER:
+
+    #                 if self.__tpmCommManager != None:
+    #                     self.__tpmCommManager.openServer()
+
+    #             elif queueId == SysQueueData.ERR_COMM_VAR_CONNECTION:
+                    
+    #                 # 에러 발생 -> 현재 진행 중인 프로그램 종료
+    #                 MainData.isRunningTPMProgram = False
+
+    #                 writeJsonData           = {}
+    #                 writeJsonData[TPMCommKeyword.KEY_METHOD] = TPMCommKeyword.METHOD_REALTIME_INFO
+    #                 writeJsonData[TPMCommKeyword.KEY_PARAMS] = {"sysEvent" : sysQueueData.getData()}
+
+    #                 self.__tpmCommManager.writeCommData(writeJsonData)
+    #                 self.__lastPingTime = curTime
+
+            
+    #         if self.__lastPingTime != 0.0 and (curTime - self.__lastPingTime) > 1:
+
+    #             # 주기적으로(1초) TPM에 실시간 데이터 전송
                 
-                writeJsonData               = {}
-                writeJsonData[TPMCommKeyword.KEY_METHOD]     = TPMCommKeyword.METHOD_REALTIME_INFO
-                writeJsonData[TPMCommKeyword.KEY_PARAMS]     = self.__tpmProgramManager.makeRealtimeProgramInfoData()
+    #             writeJsonData               = {}
+    #             writeJsonData[TPMCommKeyword.KEY_METHOD]     = TPMCommKeyword.METHOD_REALTIME_INFO
+    #             writeJsonData[TPMCommKeyword.KEY_PARAMS]     = self.__tpmProgramManager.makeRealtimeProgramInfoData()
             
-                self.__tpmCommManager.writeCommData(writeJsonData)
-                self.__lastPingTime = curTime
-            #/if
-        # /while
+    #             self.__tpmCommManager.writeCommData(writeJsonData)
+    #             self.__lastPingTime = curTime
+    #         #/if
+    #     # /while
 
-        CDRLog.print("============ __mainControlThread terminated...")
+    #     CDRLog.print("============ __mainControlThread terminated...")
 
 
 

@@ -41,6 +41,10 @@ class _Config(object):
     def KEY_STOP_DEFAULT_PROGRAM() -> str:
         return "s"
     
+    @constant
+    def KEY_ORDERLIST_PRINT() -> str:
+        return "o"
+    
 
 Config = _Config()
     

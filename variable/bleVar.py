@@ -20,7 +20,7 @@ from data.mainData import MainData
 
 class BLEVar :
 
-    def __init__(self, eventCallback:Callable[[int, Any], None]):
+    def __init__(self, eventCallback:Callable[[int, Any], None], name=None) :
         
         self.__eventCallback    :Callable[[int], None]      = eventCallback
 
@@ -33,7 +33,7 @@ class BLEVar :
         
         self.__readPacketList   :list[bytearray]            = []
         self.__readPacket       :bytearray                  = None    
-        
+        self.name = name
 
 
     def __del__(self) :
@@ -64,13 +64,13 @@ class BLEVar :
         await self.__disconnect()
 
         i = 0 
-        while i < 5 :
+        while i <= 5 :
             if MainData.isRunningTPMProgram == False :
                 break
             try:
                 if self.__bleClient == None : 
                     self.__characteristic   = uuid.UUID(characteristicUUID)
-                    self.__bleClient        = BleakClient(macAddr, timeout=5)#(macAddr)
+                    self.__bleClient        = BleakClient(macAddr, timeout=10)#(macAddr)
                 CDRLog.print(f"재연결 시도 중...{i}..{self.__bleClient.is_connected} {self.__bleClient.address}")
     
                 if not self.__bleClient.is_connected:

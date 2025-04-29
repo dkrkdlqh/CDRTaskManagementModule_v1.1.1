@@ -13,7 +13,7 @@ class _CRCJsonKeyword():
 
     @constant
     def TOPIC_CRC_SERVER() -> str:
-        return "crc/jts"
+        return "crc/server"
     
     @constant
     def TOPIC_CRC_RMS() -> str:
@@ -24,16 +24,17 @@ class _CRCJsonKeyword():
         return "print/mbrush"
     
     @constant
+    def TOPIC_MBRUSH_RMS() -> str:
+        return "print/rms"
+   
+    
+    @constant
     def KEY_CODE() -> str:
         return "code"
     
     @constant
     def KEY_STORE_ID() -> str:
         return "storeId"
-    
-    @constant
-    def KEY_ORDER_ID() -> str:
-        return "orderId"
     
     @constant
     def KEY_ORDER_ID() -> str:
@@ -63,6 +64,12 @@ class _CRCJsonKeyword():
     def KEY_PRINT_TYPE() -> str:
         return "printType"
     
+        
+    @constant
+    def KEY_ORDER_DETAILS() -> str:
+        return "orderDetails"
+    
+
     @constant
     def KEY_REQ_ID() -> str:
         return "reqId"
@@ -82,10 +89,6 @@ class _CRCJsonKeyword():
     @constant
     def KEY_COLOR() -> str:
         return "color"
-    
-    @constant
-    def KEY_EVENT_ID() -> str:
-        return "eventId"
     
     @constant
     def KEY_EVENT_ID() -> str:
@@ -114,6 +117,10 @@ class _CRCJsonKeyword():
     @constant
     def VALUE_CODE_ORDER_RES() -> str:
         return "ORDER_RES"
+    
+    @constant
+    def VALUE_CODE_ORDER_LIST_RES() -> str:
+        return "ORDER_LIST_RES"
     
     @constant
     def VALUE_STATUS_ID_WORKING() -> str:

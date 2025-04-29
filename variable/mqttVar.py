@@ -44,8 +44,14 @@ class MqttVar :
         
         try :
             
-            self.__mqttTopics        :list                       = topics   
-            self.__mqttFilter        :MqttFilterData             = filter
+            #self.__mqttTopics        :list                       = topics   
+            #self.__mqttFilter        :MqttFilterData             = filter
+            self.__mqttAddr = addr
+            self.__mqttPort = port
+            self.__mqttUserId = userId
+            self.__mqttUserPW = userPW
+            self.__mqttTopics = topics
+
 
             self.__mqttClient = paho.Client(paho.CallbackAPIVersion.VERSION2)
             self.__mqttClient.tls_set(tls_version = ssl.PROTOCOL_TLS)
@@ -71,18 +77,19 @@ class MqttVar :
             self.__mqttClient.loop_stop()
             self.__mqttClient.on_message = None
             self.__mqttClient = None
+            
+    #250414 4차개발 - topic에 매장번호 추가하면서 MQTT 필터 불필요
+    # def setSubscribeFilter(self, filter:MqttFilterData):
+    #     '''
+    #     구독 데이터 필터 설정
+    #     '''
 
-    def setSubscribeFilter(self, filter:MqttFilterData):
-        '''
-        구독 데이터 필터 설정
-        '''
-
-        self.__mqttFilter = filter
+    #     self.__mqttFilter = filter
 
 
 
     def write(self, topic:str, msg:str) :
-        
+        #print(f"write mqtt data : {topic} / {msg}")
         try : 
             if self.__mqttClient != None:
 
@@ -158,6 +165,22 @@ class MqttVar :
             self.__mqttClient.on_message = None
             self.__mqttClient = None
         CDRLog.print("MqttVar disconnect B")  # 로그용!
+
+        # 재연결 시도 로직
+        retry_count = 0
+        max_retries = 5
+        while retry_count < max_retries:
+            try:
+                CDRLog.print(f"MQTT 재연결 시도 {retry_count + 1}/{max_retries}...")
+                self.connect(self.__mqttAddr, self.__mqttPort, self.__mqttUserId, self.__mqttUserPW, self.__mqttTopics)
+                if self.isConnected():
+                    CDRLog.print("MQTT 재연결 성공")
+                    return
+            except Exception as e:
+                CDRLog.print(f"MQTT 재연결 실패: {e}")
+            retry_count += 1
+            time.sleep(5)  # 재연결 시도 간격 (5초)
+
         # 프로그램 실행 중에 mqtt 통신이 disconnect 된 상황 -> 의도하지 않은 에러 상황으로 판단하여, 이벤트 발생! 
         if MainData.isRunningTPMProgram == True and self.__eventCallback != None:
             self.__eventCallback(Event.COMM_VAR_DISCONNECTED, self)
@@ -182,22 +205,23 @@ class MqttVar :
         msgDict:dict = CDRUtil.strToJson(msg.payload.decode())
         
         # 예외처리 : 필터가 존재하고, read된 데이터가 필터의 key값을 가지고 있고, 데이터와 필터의 value값이 다르면 skip
-        if self.__mqttFilter != None:    
+        #250414 4차개발 - topic에 매장번호 추가하면서 MQTT 필터 불필요
+        # if self.__mqttFilter != None:    
             
-            key     :str    = self.__mqttFilter.getKey()
-            value           = self.__mqttFilter.getValue()
+        #     key     :str    = self.__mqttFilter.getKey()
+        #     value           = self.__mqttFilter.getValue()
             
-            if key in msgDict: 
+        #     if key in msgDict: 
                 
-                if msgDict[key] != value:
-                    return
+        #         if msgDict[key] != value:
+        #             return
         
-            msgDict[MqttVar.KEY_TOPIC]      = msg.topic
+        msgDict[MqttVar.KEY_TOPIC]      = msg.topic
             
-            self.__readPacket               = msgDict
+        self.__readPacket               = msgDict
             
-            # 리스트의 read 패킷 개수가 100개가 넘지 않도록 조절 
-            if len(self.__readPacketList) > 100:
-                self.__readPacketList.pop(0)
+        # 리스트의 read 패킷 개수가 100개가 넘지 않도록 조절 
+        if len(self.__readPacketList) > 100:
+            self.__readPacketList.pop(0)
 
-            self.__readPacketList.append(msgDict.copy())
+        self.__readPacketList.append(msgDict.copy())

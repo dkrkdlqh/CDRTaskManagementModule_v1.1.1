@@ -20,6 +20,7 @@ from variable.melsecPLCVar import MelsecPLCVar
 from variable.modbusTCPVar import ModbusTCPVar
 from variable.mqttVar import MqttVar
 
+
 from data.sysFuncData import SysFuncData
 from data.paramDefineData import ParamDefineData as Param
 from data.mqttFilterData import MqttFilterData
@@ -34,7 +35,8 @@ import datetime
 import time
 from queue import Queue
 
-
+from data.orderData import OrderHandler
+from manager.CRCManager import CRCManager
 
 class TPMSysFuncManager():
 
@@ -57,7 +59,7 @@ class TPMSysFuncManager():
         
         self.__sysfuncList          = []
         self.__sysfuncList.append(SysFuncData(  SysFuncName.FR_CONNECT,       
-                                                [Param(SysFuncKeyword.ADDRESS, VarType.TYPE_STR)], 
+                                                [   Param(SysFuncKeyword.ADDRESS, VarType.TYPE_STR)], 
                                                 []))
         
         self.__sysfuncList.append(SysFuncData(  SysFuncName.FR_STOP_MOTION, [], []))
@@ -66,91 +68,6 @@ class TPMSysFuncManager():
                                                 [], 
                                                 [Param(SysFuncKeyword.DATA, VarType.TYPE_FLOAT_ARRAY)]))
         
-        self.__sysfuncList.append(SysFuncData(  SysFuncName.RUN_RWRP_COMM,          
-                                                [Param(SysFuncKeyword.ADDRESS, VarType.TYPE_STR), Param(SysFuncKeyword.PORT, VarType.TYPE_INT)], 
-                                                []))
-        
-        self.__sysfuncList.append(SysFuncData(  SysFuncName.GET_RWRP_COLLISION,          
-                                                [], 
-                                                [Param(SysFuncKeyword.COLLISION, VarType.TYPE_INT)]))
-        
-        self.__sysfuncList.append(SysFuncData(  SysFuncName.DH_GRIPPER_INIT,          
-                                                [Param(SysFuncKeyword.TCPIP_VAR, VarType.TYPE_TCP_IP)], 
-                                                []))
-        
-        self.__sysfuncList.append(SysFuncData(  SysFuncName.DH_GRIPPER_HOLD, 
-                                                [Param(SysFuncKeyword.TCPIP_VAR, VarType.TYPE_TCP_IP)], 
-                                                []))
-        
-        self.__sysfuncList.append(SysFuncData(  SysFuncName.DH_GRIPPER_RELEASE, 
-                                                [Param(SysFuncKeyword.TCPIP_VAR, VarType.TYPE_TCP_IP)], 
-                                                []))
-        #mini gripper 250109
-        self.__sysfuncList.append(SysFuncData(  SysFuncName.JODELL_GRIPPER_INIT,          
-                                                [Param(SysFuncKeyword.TCPIP_VAR, VarType.TYPE_TCP_IP)], 
-                                                []))
-        
-        self.__sysfuncList.append(SysFuncData(  SysFuncName.JODELL_GRIPPER_HOLD, 
-                                                [Param(SysFuncKeyword.TCPIP_VAR, VarType.TYPE_TCP_IP)], 
-                                                []))
-        
-        self.__sysfuncList.append(SysFuncData(  SysFuncName.JODELL_GRIPPER_RELEASE, 
-                                                [Param(SysFuncKeyword.TCPIP_VAR, VarType.TYPE_TCP_IP)], 
-                                                []))
-
-        self.__sysfuncList.append(SysFuncData(  SysFuncName.PUB_CRC_ORDER_COMPLETE,          
-                                                [   Param(SysFuncKeyword.MQTT_VAR, VarType.TYPE_MQTT), 
-                                                    Param(SysFuncKeyword.STORE_ID, VarType.TYPE_INT), 
-                                                    Param(SysFuncKeyword.ORDER_ID, VarType.TYPE_INT)], 
-                                                []))
-        
-        self.__sysfuncList.append(SysFuncData(  SysFuncName.GET_CRC_ORDER_MENU,          
-                                                [], 
-                                                [Param(SysFuncKeyword.ORDER_MENU, VarType.TYPE_INT)]))
-        
-        self.__sysfuncList.append(SysFuncData(  SysFuncName.GET_CRC_ORDER_MENU_LIST,          
-                                                [], 
-                                                [Param(SysFuncKeyword.ORDER_MENU_LIST, VarType.TYPE_INT_ARRAY)]))
-        
-        self.__sysfuncList.append(SysFuncData(  SysFuncName.GET_CRC_ORDER_QUANTITY,          
-                                                [], 
-                                                [Param(SysFuncKeyword.ORDER_QUANTITY, VarType.TYPE_INT)]))
-        
-        self.__sysfuncList.append(SysFuncData(  SysFuncName.GET_CRC_ORDER_ID,          
-                                                [], 
-                                                [Param(SysFuncKeyword.ORDER_ID, VarType.TYPE_INT)]))
-        
-        self.__sysfuncList.append(SysFuncData(  SysFuncName.GET_CRC_ORDER_NUMBER,          
-                                                [], 
-                                                [Param(SysFuncKeyword.ORDER_NUM, VarType.TYPE_INT)]))
-        
-        self.__sysfuncList.append(SysFuncData(  SysFuncName.RUN_CRC_COMM,          
-                                                [   Param(SysFuncKeyword.MQTT_VAR, VarType.TYPE_MQTT), 
-                                                    Param(SysFuncKeyword.STORE_ID, VarType.TYPE_INT), 
-                                                    Param(SysFuncKeyword.PRINTER_ID, VarType.TYPE_INT), 
-                                                    Param(SysFuncKeyword.MAX_ORDER_QUANTITY, VarType.TYPE_INT)],
-                                                []))
-        
-        self.__sysfuncList.append(SysFuncData(  SysFuncName.BREW_DELONGHI_ESPRESSO,          
-                                                [Param(SysFuncKeyword.DEVICE, VarType.TYPE_BLE)], 
-                                                []))
-        
-        self.__sysfuncList.append(SysFuncData(  SysFuncName.BREW_DELONGHI_AMERICANO,          
-                                                [Param(SysFuncKeyword.DEVICE, VarType.TYPE_BLE)], 
-                                                []))
-        
-        self.__sysfuncList.append(SysFuncData(  SysFuncName.WAKE_UP_DELONGHI,          
-                                                [Param(SysFuncKeyword.DEVICE, VarType.TYPE_BLE)], 
-                                                []))
-        
-        self.__sysfuncList.append(SysFuncData(  SysFuncName.GET_DELONGHI_STATE_CODE,          
-                                                [Param(SysFuncKeyword.DEVICE, VarType.TYPE_BLE)], 
-                                                [Param(SysFuncKeyword.STATE_CODE, VarType.TYPE_INT)]))
-        
-        self.__sysfuncList.append(SysFuncData(  SysFuncName.IS_DELONGHI_IDLE,          
-                                                [Param(SysFuncKeyword.DEVICE, VarType.TYPE_BLE)], 
-                                                [Param(SysFuncKeyword.RESULT, VarType.TYPE_BOOL)]))
-
         self.__sysfuncList.append(SysFuncData(  SysFuncName.SEND_FR_MODBUS_CMD,          
                                                 [   Param(SysFuncKeyword.ROBOT_COMM, VarType.TYPE_MODBUS_TCP), 
                                                     Param(SysFuncKeyword.CMD_MEMORY_ADDRESS, VarType.TYPE_INT), 
@@ -160,28 +77,124 @@ class TPMSysFuncManager():
                                                     Param(SysFuncKeyword.FIN_FEEDBACK, VarType.TYPE_INT)], 
                                                 []))
         
-        self.__sysfuncList.append(SysFuncData(  SysFuncName.SEND_PRINT_INFO,          
-                                                [   Param(SysFuncKeyword.ORDER_MENU, VarType.TYPE_INT)], 
+        self.__sysfuncList.append(SysFuncData(  SysFuncName.RUN_RWRP_COMM,          
+                                                [   Param(SysFuncKeyword.ADDRESS, VarType.TYPE_STR), Param(SysFuncKeyword.PORT, VarType.TYPE_INT)], 
+                                                []))
+        
+        self.__sysfuncList.append(SysFuncData(  SysFuncName.GET_RWRP_COLLISION,          
+                                                [], 
+                                                [Param(SysFuncKeyword.COLLISION, VarType.TYPE_INT)]))
+        
+        self.__sysfuncList.append(SysFuncData(  SysFuncName.DH_GRIPPER_INIT,          
+                                                [   Param(SysFuncKeyword.TCPIP_VAR, VarType.TYPE_TCP_IP)], 
+                                                []))
+        
+        self.__sysfuncList.append(SysFuncData(  SysFuncName.DH_GRIPPER_HOLD, 
+                                                [   Param(SysFuncKeyword.TCPIP_VAR, VarType.TYPE_TCP_IP)], 
+                                                []))
+        
+        self.__sysfuncList.append(SysFuncData(  SysFuncName.DH_GRIPPER_RELEASE, 
+                                                [   Param(SysFuncKeyword.TCPIP_VAR, VarType.TYPE_TCP_IP)], 
+                                                []))
+        #mini gripper 250109
+        self.__sysfuncList.append(SysFuncData(  SysFuncName.JODELL_GRIPPER_INIT,          
+                                                [   Param(SysFuncKeyword.TCPIP_VAR, VarType.TYPE_TCP_IP)], 
+                                                []))
+        
+        self.__sysfuncList.append(SysFuncData(  SysFuncName.JODELL_GRIPPER_HOLD, 
+                                                [   Param(SysFuncKeyword.TCPIP_VAR, VarType.TYPE_TCP_IP)], 
+                                                []))
+        
+        self.__sysfuncList.append(SysFuncData(  SysFuncName.JODELL_GRIPPER_RELEASE, 
+                                                [   Param(SysFuncKeyword.TCPIP_VAR, VarType.TYPE_TCP_IP)], 
                                                 []))
 
-        self.__sysfuncList.append(SysFuncData(  SysFuncName.SEND_PRINT_CMD,          
-                                                [   Param(SysFuncKeyword.MQTT_VAR, VarType.TYPE_MQTT), 
-                                                    Param(SysFuncKeyword.ORDER_ID, VarType.TYPE_INT), 
+
+        
+        self.__sysfuncList.append(SysFuncData(  SysFuncName.BREW_DELONGHI_ESPRESSO,          
+                                                [   Param(SysFuncKeyword.DEVICE, VarType.TYPE_BLE)], 
+                                                []))
+        
+        self.__sysfuncList.append(SysFuncData(  SysFuncName.BREW_DELONGHI_AMERICANO,          
+                                                [   Param(SysFuncKeyword.DEVICE, VarType.TYPE_BLE)], 
+                                                []))
+        
+        self.__sysfuncList.append(SysFuncData(  SysFuncName.WAKE_UP_DELONGHI,          
+                                                [   Param(SysFuncKeyword.DEVICE, VarType.TYPE_BLE)], 
+                                                []))
+        
+        self.__sysfuncList.append(SysFuncData(  SysFuncName.GET_DELONGHI_STATE_CODE,          
+                                                [   Param(SysFuncKeyword.DEVICE, VarType.TYPE_BLE)], 
+                                                [Param(SysFuncKeyword.STATE_CODE, VarType.TYPE_INT)]))
+        
+        self.__sysfuncList.append(SysFuncData(  SysFuncName.IS_DELONGHI_IDLE,          
+                                                [   Param(SysFuncKeyword.DEVICE, VarType.TYPE_BLE)], 
+                                                [Param(SysFuncKeyword.RESULT, VarType.TYPE_BOOL)]))
+
+        self.__sysfuncList.append(SysFuncData(  SysFuncName.RUN_CRC_COMM,          
+                                                [   Param(SysFuncKeyword.STORE_ID, VarType.TYPE_INT), 
                                                     Param(SysFuncKeyword.PRINTER_ID, VarType.TYPE_INT)], 
+                                                []))
+        self.__sysfuncList.append(SysFuncData(  SysFuncName.GET_CRC_ORDER,          
+                                                [], 
+                                                [Param(SysFuncKeyword.ORDER_ID, VarType.TYPE_INT), 
+                                                 Param(SysFuncKeyword.ORDER_NUM, VarType.TYPE_INT),
+                                                 #Param(SysFuncKeyword.ORDER_MENU, VarType.TYPE_INT)
+                                                 Param(SysFuncKeyword.ORDER_MENU_LIST, VarType.TYPE_INT_ARRAY)
+                                                 ]))
+        
+        self.__sysfuncList.append(SysFuncData(  SysFuncName.SET_CRC_ORDER_DONE,          
+                                                [   Param(SysFuncKeyword.ORDER_ID, VarType.TYPE_INT)#,
+                                                    #Param(SysFuncKeyword.ORDER_MENU, VarType.TYPE_INT)
+                                                ], 
+                                                []))
+
+        # self.__sysfuncList.append(SysFuncData(  SysFuncName.GET_CRC_ORDER_MENU,          
+        #                                         [], 
+        #                                         [Param(SysFuncKeyword.ORDER_MENU, VarType.TYPE_INT)]))
+        
+        # self.__sysfuncList.append(SysFuncData(  SysFuncName.GET_CRC_ORDER_MENU_LIST,          
+        #                                         [], 
+        #                                         [Param(SysFuncKeyword.ORDER_MENU_LIST, VarType.TYPE_INT_ARRAY)]))
+        
+        # self.__sysfuncList.append(SysFuncData(  SysFuncName.GET_CRC_ORDER_QUANTITY,          
+        #                                         [], 
+        #                                         [Param(SysFuncKeyword.ORDER_QUANTITY, VarType.TYPE_INT)]))
+        
+        # self.__sysfuncList.append(SysFuncData(  SysFuncName.GET_CRC_ORDER_ID,          
+        #                                         [], 
+        #                                         [Param(SysFuncKeyword.ORDER_ID, VarType.TYPE_INT)]))
+        
+        # self.__sysfuncList.append(SysFuncData(  SysFuncName.GET_CRC_ORDER_NUMBER,          
+        #                                         [], 
+        #                                         [Param(SysFuncKeyword.ORDER_NUM, VarType.TYPE_INT)]))
+        
+        # self.__sysfuncList.append(SysFuncData(  SysFuncName.RUN_CRC_COMM,          
+        #                                         [   Param(SysFuncKeyword.MQTT_VAR, VarType.TYPE_MQTT), 
+        #                                             Param(SysFuncKeyword.STORE_ID, VarType.TYPE_INT), 
+        #                                             Param(SysFuncKeyword.PRINTER_ID, VarType.TYPE_INT), 
+        #                                             Param(SysFuncKeyword.MAX_ORDER_QUANTITY, VarType.TYPE_INT)],
+        #                                         []))
+        
+        self.__sysfuncList.append(SysFuncData(  SysFuncName.SEND_PRINT_DATA,          
+                                                [   Param(SysFuncKeyword.ORDER_ID, VarType.TYPE_INT),
+                                                    Param(SysFuncKeyword.ORDER_MENU, VarType.TYPE_INT)], 
+                                                []))
+
+        self.__sysfuncList.append(SysFuncData(  SysFuncName.SEND_PRINT_START,          
+                                                [   Param(SysFuncKeyword.ORDER_ID, VarType.TYPE_INT)], 
                                                 []))
 
         self.__sysfuncList.append(SysFuncData(  SysFuncName.GET_PRINT_STATE,          
-                                                [   Param(SysFuncKeyword.MQTT_VAR, VarType.TYPE_MQTT), 
-                                                    Param(SysFuncKeyword.PRINTER_ID, VarType.TYPE_INT)], 
+                                                [], 
                                                 [Param(SysFuncKeyword.PRINTER_STATE, VarType.TYPE_STR)]))
         
         self.__sysfuncList.append(SysFuncData(  SysFuncName.ORDER_UI_SENDDATA, 
-                                                [Param(SysFuncKeyword.TCPIP_VAR, VarType.TYPE_TCP_IP),
-                                                 Param(SysFuncKeyword.TRAY_ID, VarType.TYPE_STR),
-                                                 Param(SysFuncKeyword.ORDER_ID, VarType.TYPE_INT)], 
+                                                    [Param(SysFuncKeyword.TCPIP_VAR, VarType.TYPE_TCP_IP),
+                                                    Param(SysFuncKeyword.TRAY_ID, VarType.TYPE_STR),
+                                                    Param(SysFuncKeyword.ORDER_ID, VarType.TYPE_INT)], 
                                                 []))
         
-
 
 
 
@@ -192,32 +205,35 @@ class TPMSysFuncManager():
     # ============================================================================================================
 
 
-    def initSysFuncVar(self):
-        '''
-        ### 시스템 변수 초기화
-        '''
+    # def initSysFuncVar(self):
+     
+    #     '''
+    #     ### 시스템 변수 초기화
+    #     '''
 
-        # CRC 시스템 함수 관련 변수들
-        self.__crcComm                  :MqttVar    = None
-        self.__storeId                  :int        = -1
-        self.__orderId                  :int        = -1
-        self.__printerId                :int        = -1
-        self.__maxOrderNum              :int        = 1
-        self.__printerState             :str        = ""
-        self.__orderQuantity            :int        = 0
-        self.__orderNumber              :int        = -1
-        self.__orderPhoneInfo           :str        = ""
-        # 주문 내 메뉴
-        self.__orderMenuList            :list[int]  = []
-        # 메세지 관리 변수
-        self.__crcServerMsgQueue        :Queue       = Queue()
-        self.__mbrushPrinterMsgQueue    :Queue       = Queue()
-        # 주문처리 상태 확인 변수 (True : 처리 중 / False : 대기 중)
-        self.__orderState               :bool       = False
-        self.__mbrushPrintType          :str        = ""
-        self.__isCRCCommThreadRunning   :bool       = False
+    #     # CRC 시스템 함수 관련 변수들
+    #     #self.__crcComm                  :MqttVar    = None
+    #     self.__crcManager               = CRCManager()
+        
+    #     self.__storeId                  :int        = -1
+    #     #self.__orderId                  :int        = -1
+    #     #self.__printerId                :int        = -1
+    #     #self.__maxOrderNum              :int        = 1
+    #     #self.__printerState             :str        = ""
+    #     #self.__orderQuantity            :int        = 0
+    #     #self.__orderNumber              :int        = -1
+    #     #self.__orderPhoneInfo           :str        = ""
+    #     # 주문 내 메뉴
+    #     #self.__orderMenuList            :list[int]  = []
+    #     # 메세지 관리 변수
+    #     self.__crcServerMsgQueue        :Queue       = Queue()
+    #     self.__mbrushPrinterMsgQueue    :Queue       = Queue()
+    #     # 주문처리 상태 확인 변수 (True : 처리 중 / False : 대기 중)
+    #     #self.__orderState               :bool       = False
+    #     #self.__mbrushPrintType          :str        = ""
+    #     self.__isCRCCommThreadRunning   :bool       = False
 
-        self.FR                         = None
+    #     #self.FR                         = None
 
 
     def getSysFuncList(self) -> list[SysFuncData]:
@@ -396,362 +412,153 @@ class TPMSysFuncManager():
         gripperComm.write('091003E80003060009FF00FFFF9E95', 1)
 
 
-    
-    def publishCRCOrderComplete(self, crcComm : MqttVar, storeId : int, orderId : int):
-        '''
-        시스템 함수 : CRC 제조완료 구문 발행
-        '''
-        publishMsg          :str = json.dumps({"code" : "ORDER_COMPLETE", "storeId": storeId, "data": {"orderId": orderId}})
-        writeMQTTResult     :bool           = False        
+        
+        
+    # def publishCRCOrderComplete(self, crcComm : MqttVar, storeId : int, orderId : int):
+    #     '''
+    #     시스템 함수 : CRC 제조완료 구문 발행
+    #     '''
+    #     publishMsg          :str = json.dumps({"code" : "ORDER_COMPLETE", "storeId": storeId, "data": {"orderId": orderId}})
+    #     writeMQTTResult     :bool           = False        
 
-        while True:
+    #     while True:
 
-            writeMQTTResult = crcComm.write(CRCKey.TOPIC_CRC_RMS, publishMsg)
+    #         writeMQTTResult = crcComm.write(CRCKey.TOPIC_CRC_RMS, publishMsg)
 
-            if writeMQTTResult == False:
-                time.sleep(0.1)
-                CDRLog.print("MQTT 변수 write 실패")
-            else:
-                print(f"publish order complete @@@ !!! {publishMsg}")
-                break 
+    #         if writeMQTTResult == False:
+    #             time.sleep(0.1)
+    #             CDRLog.print("MQTT 변수 write 실패")
+    #         else:
+    #             print(f"publish order complete @@@ !!! {publishMsg}")
+    #             break 
 
-        self.__orderState       = False 
-        self.__orderId          = -1
-        self.__orderNumber      = -1
-        self.__orderQuantity    = 0
-        self.__mbrushPrintType  = ""
-        self.__orderPhoneInfo   = ""
-        self.__orderMenuList    = []   
-
-
-
-    def getCRCOrderMenu(self) -> int:
-        '''
-        시스템 함수 : CRC 시스템으로 주문된 메뉴에 대해, 첫번째 메뉴의 id값 반환
-        '''
-        orderMenu :int = -1
-
-        if self.__orderMenuList and len(self.__orderMenuList) > 0:
-
-            orderMenu :int = self.__orderMenuList[0]
-            del(self.__orderMenuList[0])
-        return orderMenu
+    #     # self.__orderState       = False 
+    #     # self.__orderId          = -1
+    #     # self.__orderNumber      = -1
+    #     # self.__orderQuantity    = 0
+    #     # self.__mbrushPrintType  = ""
+    #     # self.__orderPhoneInfo   = ""
+    #     # self.__orderMenuList    = []   
 
 
 
-    def getCRCOrderMenuList(self) -> list[int]:
-        '''
-        시스템 함수 : CRC 시스템으로 주문된 메뉴에 대해, 모든 메뉴의 id값들을 반환
-        '''
-        orderMenuList :list[int] = []
+    # def getCRCOrderMenu(self) -> int:
+    #     '''
+    #     시스템 함수 : CRC 시스템으로 주문된 메뉴에 대해, 첫번째 메뉴의 id값 반환
+    #     '''
+    #     orderMenu :int = -1
 
-        # 최대 주문 가능 개수만큼 -1값을 리스트에 할당.
-        for i in range(self.__maxOrderNum):
-            orderMenuList.append(-1)
+    #     if self.__orderMenuList and len(self.__orderMenuList) > 0:
 
-        if self.__orderMenuList:   
-            for i in range(len(self.__orderMenuList)):
-                orderMenuList[i] = self.__orderMenuList[i]
-        print(f'orderMenuList : {orderMenuList}')
-        return orderMenuList
+    #         orderMenu :int = self.__orderMenuList[0]
+    #         del(self.__orderMenuList[0])
+    #     return orderMenu
+
+
+
+    # def getCRCOrderMenuList(self) -> list[int]:
+    #     '''
+    #     시스템 함수 : CRC 시스템으로 주문된 메뉴에 대해, 모든 메뉴의 id값들을 반환
+    #     '''
+    #     orderMenuList :list[int] = []
+
+    #     # 최대 주문 가능 개수만큼 -1값을 리스트에 할당.
+    #     for i in range(self.__maxOrderNum):
+    #         orderMenuList.append(-1)
+
+    #     if self.__orderMenuList:   
+    #         for i in range(len(self.__orderMenuList)):
+    #             orderMenuList[i] = self.__orderMenuList[i]
+    #     print(f'orderMenuList : {orderMenuList}')
+    #     return orderMenuList
 
         
     
-    def getCRCOrderNum(self) -> int:
-        '''
-        시스템 함수 : CRC 주문 메뉴 총 수량 확인
-        '''
-        return self.__orderQuantity
+    # def getCRCOrderNum(self) -> int:
+    #     '''
+    #     시스템 함수 : CRC 주문 메뉴 총 수량 확인
+    #     '''
+    #     return self.__orderQuantity
     
     
-    def getCRCOrderId(self) -> int:
-        '''
-        시스템 함수 : CRC 주문 Id 확인
-        '''
-        return self.__orderId
+    # def getCRCOrderId(self) -> int:
+    #     '''
+    #     시스템 함수 : CRC 주문 Id 확인
+    #     '''
+    #     return self.__orderId
     
-    def getCRCOrderNumber(self) -> int:
-        '''
-        시스템 함수 : CRC 주문 번호 확인
-        '''
-        return self.__orderNumber
+    # def getCRCOrderNumber(self) -> int:
+    #     '''
+    #     시스템 함수 : CRC 주문 번호 확인
+    #     '''
+    #     return self.__orderNumber
     
-    def runCRCCommunication(self, crcComm:MqttVar, storeId : int, printerId : int, maxOrderNum:int) :        
+    # def sendCRCOrderComplete(self, orderId : int):
+    #     '''
+    #     시스템 함수 : CRC 제조완료 구문 발행
+    #     '''
+    #     self.__crcManager.publishCRCOrderComplete(orderId)
+        
+        
+    def setCRCOrderMakeDone(self, orderId:int):
+        '''
+        시스템 함수 : CRC 주문 완료 상태로 변경
+        '''
+        #order = self.__crcManager.orderHandler.getOrderItemByIdMenuState(orderId, orderMenuId, self.__crcManager.ORDER_STATE_MAKE_READY)
+        self.__crcManager.orderHandler.updateOrderStateByOrderId(orderId, self.__crcManager.ORDER_STATE_PICKUP_ENABLE)
+        
+        
+      #     # 최대 주문 가능 개수만큼 -1값을 리스트에 할당.
+    #     for i in range(self.__maxOrderNum):
+    #         orderMenuList.append(-1)
+
+    #     if self.__orderMenuList:   
+    #         for i in range(len(self.__orderMenuList)):
+    #             orderMenuList[i] = self.__orderMenuList[i]
+    #     print(f'orderMenuList : {orderMenuList}')
+    #     return orderMenuList      
+        
+    def getCRCOrder(self) -> tuple[int, int, list[int]]:
+        '''
+        시스템 함수 : CRC 주문 정보 확인
+        '''
+        orderId          :int   =   -1
+        orderNumber      :int   =   -1
+        #orderMenu        :int   =   -1
+        orderMenuList    :list[int] = [-1]
+        order = self.__crcManager.orderHandler.getOrderItemByState(self.__crcManager.ORDER_STATE_NONE)
+        if order :
+            orderId     = order.orderId
+            orderNumber = order.orderNumber
+            #orderMenu   = order.menuId  
+            orderMenuList = self.__crcManager.orderHandler.getMenuIdsByOrderId(orderId)
+            
+                
+            self.__crcManager.orderHandler.updateOrderStateByOrderId(orderId, self.__crcManager.ORDER_STATE_MAKE_READY)
+            CDRLog.print(f"getCRCOrder : {orderId}, {orderNumber}, {orderMenuList}")
+        return (orderId, orderNumber, orderMenuList)
+    
+    def runCRCCommunication(self,  storeId : int, printerId : int) :        
         '''
         시스템 함수 : CRC 상태, 주문 데이터 처리 함수 실행
         '''
-        if self.__isCRCCommThreadRunning == True:
-            #alreay running...
-            return 
+        self.__crcManager = CRCManager()
+        self.__printerState             :str        = ""
+        self.__crcManager.startCRCCommunication(storeId, printerId)
+
+  
+    def sendPrintData(self, orderId:int ,orderMenuId:int):
+        self.__crcManager.publishCRCPrintData(orderId, orderMenuId)
+
+    def sendPrintStart(self, orderId:int):
+        self.__crcManager.publishCRCPrintStart(orderId)
         
-        self.__crcComm                  = crcComm
-        self.__storeId                  = storeId
-        self.__printerId                = printerId
-        self.__maxOrderNum              = maxOrderNum
-
-        # 해당 함수처리에서 데이터가 'storeId' 항목을 가진 경우, 약속된 storeId 값에 데이터만 처리하도록 필터링을 설정한다.
-        self.__crcComm.setSubscribeFilter(MqttFilterData(CRCKey.KEY_STORE_ID, storeId))
-
-        self.__isCRCCommThreadRunning   = True
-
-        threading.Thread(target = self.__crcCommunicationThreadHandler).start()
-        threading.Thread(target = self.__crcServerMsgThreadHandler).start()
-        threading.Thread(target = self.__mbrushPrinterMsgThreadHandler).start()
-
-
-
-    def __crcCommunicationThreadHandler(self):
+    def getPrintState(self) -> str:
         '''
-        시스템 함수 : 구독중인 CRC 서버 및 mBrush 프린터로부터 전달받은 데이터 처리
+        각인기 mbrush 상태 정보 반환
         '''
+        return self.__printerState          
 
-        self.__orderId                  = -1
-        self.__orderQuantity            = 0
-        self.__orderNumber              = -1
-        self.__orderPhoneInfo           = ""
-        self.__orderMenuList            = [] # 주문 내 메뉴
-        self.__crcServerMsgQueue        = Queue()
-        self.__mbrushPrinterMsgQueue    = Queue()
-        self.__orderState               = False # 주문처리 상태 확인 변수 (True : 처리 중 / False : 대기 중)
-
-        self.__crcComm.write(CRCKey.TOPIC_CRC_RMS, 
-                            json.dumps({
-                                CRCKey.KEY_CODE : CRCKey.VALUE_CAFE_START, 
-                                CRCKey.KEY_STORE_ID : self.__storeId,
-                                CRCKey.KEY_PRINTER_ID : self.__printerId    
-                                })
-                            )
-
-        readJSonMsg :dict = None
-        
-        # read 데이터 패킷 정보 모두 초기화 
-        self.__crcComm.clearReadPacket()
-
-        while MainData.isRunningTPMProgram and self.__isCRCCommThreadRunning:
-            
-            # CRC 통신의 경우, 복수의 req가 동시에 수신될 가능성이 있다.
-            # 수신 패킷을 정밀하게 파악하기 위해, 리스트에 패킷을 받아 처리한다. 
-            readJSonMsg = self.__crcComm.readFirstPacket()            
-            
-            if readJSonMsg != None:
-                
-                msgTopic :str = readJSonMsg[MqttVar.KEY_TOPIC]
-                try :
-
-                    if msgTopic == CRCKey.TOPIC_CRC_SERVER:
-                        
-                        self.__crcServerMsgQueue.put(readJSonMsg)
-
-                    elif msgTopic == CRCKey.TOPIC_MBRUSH_PRINTER:
-                        self.__mbrushPrinterMsgQueue.put(readJSonMsg)
-
-                except Exception as e :
-                    print('Mqtt Rcv Error : ', e)
-
-        CDRLog.print("============ __crcCommunicationThreadHandler terminated...")
-
-
-
-
-    def __crcServerMsgThreadHandler(self):
-        '''
-        CRC 서버에서 수신된 메세지 처리 스레드\n
-        '''
-        while MainData.isRunningTPMProgram and self.__isCRCCommThreadRunning:
-            
-            # 큐에 담긴 데이터가 없으면 skip
-            if self.__crcServerMsgQueue.empty() == True:
-                continue
-            
-            reqMsgData  :dict = self.__crcServerMsgQueue.get()
-
-            # 큐 데이터가 'code' key가 없다면 skip
-            if not CRCKey.KEY_CODE in reqMsgData:
-                continue
-
-            codeValue   :str    = reqMsgData[CRCKey.KEY_CODE]
-            resMsgData  :dict   = {}
-            
-            # CRC 서버의 상태 요청 메세지 처리
-            if codeValue == CRCKey.VALUE_CODE_STATUS_CHECK:
-
-                status :str = CRCKey.VALUE_STATUS_ID_READY    
-
-                if self.__orderState == True:
-                    status = CRCKey.VALUE_STATUS_ID_WORKING
-                
-                resMsgData = {
-                                CRCKey.KEY_CODE     : CRCKey.VALUE_CODE_STATUS_RES, 
-                                CRCKey.KEY_STORE_ID : self.__storeId, 
-                                CRCKey.KEY_DATA     : {
-                                                        CRCKey.KEY_STATUS_ID : status
-                                                        }
-                            }
-
-                self.__crcComm.write(CRCKey.TOPIC_CRC_RMS, json.dumps(resMsgData))
-
-                    
-            # CRC 서버의 주문 요청 메세지 처리
-            elif codeValue == CRCKey.VALUE_CODE_ORDER_REQ:
-                CDRLog.print(f"주문 Msg : {reqMsgData}")
-                # 제조 중인 상태라면 skip
-                if self.__orderState == True:
-                    continue
-                
-                try:
-                    self.__orderState = True
-                    self.__orderMenuList    = []
-                    self.__orderQuantity    = 0
-
-                    orderMenuJson   :dict   = reqMsgData[CRCKey.KEY_DATA][CRCKey.KEY_ORDER_LIST]
-                    
-                    # 주문된 각각의 메뉴 id값을 self.__orderMenuList 배열에 저장 ------------------
-                    # ex. 1000번 메뉴를 1개, 1001번 메뉴를 1개 주문한 경우 배열 데이터가 [1000, 1001]로 생성. 
-                    for menuId in orderMenuJson.keys():
-
-                        menuNum:int = orderMenuJson[menuId] 
-
-                        for i in range(menuNum):
-                            self.__orderMenuList.append(int(menuId))
-                            self.__orderQuantity += 1
-                    # ---------------------------------------------------------------------------        
-
-
-
-                    # 각인기에 전달할 데이터 저장
-                    self.__orderPhoneInfo   = reqMsgData[CRCKey.KEY_PHONE][7:] #끝 4자리 숫자값 
-                    self.__mbrushPrintType  = reqMsgData[CRCKey.KEY_PRINT_TYPE]
-
-                    self.__orderId          = int(reqMsgData[CRCKey.KEY_DATA][CRCKey.KEY_ORDER_ID])
-                    self.__orderNumber      = int(reqMsgData[CRCKey.KEY_DATA][CRCKey.KEY_ORDER_NUMBER])
-                    CDRLog.print(f"주문 id : {self.__orderId}, 주문 수량 : {self.__orderQuantity}, 주문 번호 : {self.__orderNumber}, 주문 메뉴 : {self.__orderMenuList}, 전화 번호 : {self.__orderPhoneInfo}")
-
-                    # 요청 주문 수신 응답 
-                    resMsgData = {
-                                    CRCKey.KEY_CODE     : CRCKey.VALUE_CODE_ORDER_RES, 
-                                    CRCKey.KEY_STORE_ID : self.__storeId, 
-                                    CRCKey.KEY_DATA     : {
-                                                            CRCKey.KEY_ORDER_ID : self.__orderId
-                                                            }
-                                }           
-                    
-                    # JTS 요청사항
-                    # 고객주문번호 (taskNumber) 생성 전에 응답이 전달되어 db에 null로 저장 -> 주문 처리 시스템 에러 발생.
-                    # 이에, 응답 데이터 회신전 1초 딜레이 요청
-                    time.sleep(1)
-                    
-                    self.__crcComm.write(CRCKey.TOPIC_CRC_RMS, json.dumps(resMsgData))
-                    print(f'ORDER_RES : {resMsgData}')  # 250401
-                    # 지금은 주문결제앱에서 관련 UI는 비활성화하고 TPM에서 직접 각인 정보를 전달해주는 방식.
-                    # if self.__mbrushPrintType == "text":
-                    #     # 프린터에 각인 데이터 전송
-                    #     self.sendPrintData(1000)
-
-                    #self.__orderState = True #위로 올림
-
-                except Exception as e :
-                    self.__orderId = -1
-                    self.__orderNumber = -1
-                    self.__orderQuantity            = 0
-                    self.__orderNumber              = -1
-                    self.__orderPhoneInfo           = ""
-                    self.__orderMenuList            = [] # 주문 내 메뉴
-                    self.__orderState = False
-                    CDRLog.print(f"error in ORDER_REQ data parsing: {str(e)}") 
-                    traceback.print_exc()
-
-        # 종료 직전에 ERROR 보내고 종료 mini
-        status :str = CRCKey.VALUE_STATUS_ID_ERROR    
-
-                
-        resMsgData = {
-                        CRCKey.KEY_CODE     : CRCKey.VALUE_CODE_STATUS_RES, 
-                        CRCKey.KEY_STORE_ID : self.__storeId, 
-                        CRCKey.KEY_DATA     : {
-                                                CRCKey.KEY_STATUS_ID : status
-                                              }
-                     }
-
-        self.__crcComm.write(CRCKey.TOPIC_CRC_RMS, json.dumps(resMsgData))
-
-        CDRLog.print("============ __crcServerMsgThreadHandler terminated...")
-                
-
-
-    def sendPrintData(self, orderMenuId:int):
-
-        # 텍스트 각인 타입 주문일 경우에만 각인 정보 전송
-        if self.__mbrushPrintType != "text":
-            return
-
-        menuNamefirst   : dict  = { CRCKey.KEY_TEXT : "", CRCKey.KEY_COLOR    : "0x000000" }
-        menuNameSecond  : dict  = { CRCKey.KEY_TEXT : "", CRCKey.KEY_COLOR    : "0x000000" }
-
-        # 메뉴별 표기 정보 설정
-        if orderMenuId == CRCMenuId.HOT_AMERICANO:
-            menuNamefirst       = { CRCKey.KEY_TEXT : "Hot",        CRCKey.KEY_COLOR    : "0xff0000" }
-            menuNameSecond      = { CRCKey.KEY_TEXT : "Americano",  CRCKey.KEY_COLOR    : "0x000000" }
-
-        elif orderMenuId == CRCMenuId.ICE_AMERICANO:
-            menuNamefirst       = { CRCKey.KEY_TEXT : "Ice",        CRCKey.KEY_COLOR    : "0x0000ff" }
-            menuNameSecond      = { CRCKey.KEY_TEXT : "Americano",  CRCKey.KEY_COLOR    : "0x000000" }
-
-        elif orderMenuId == CRCMenuId.HOT_ESPRESSO:
-            menuNamefirst       = { CRCKey.KEY_TEXT : " ",         CRCKey.KEY_COLOR    : "0xff0000" }
-            menuNameSecond      = { CRCKey.KEY_TEXT : "Espresso",  CRCKey.KEY_COLOR    : "0x000000" }
-        
-        elif orderMenuId == CRCMenuId.BEER:              #250305 mini beer 추가 
-            menuNamefirst       = { CRCKey.KEY_TEXT : " ",        CRCKey.KEY_COLOR    : "0x000000" }
-            menuNameSecond      = { CRCKey.KEY_TEXT : "BEER",  CRCKey.KEY_COLOR    : "0x000000" }
-
-        # 각인기 텍스트 정보
-        printMsg    :dict = {
-                                CRCKey.KEY_REQ_ID       : CRCKey.VALUE_SEND_DATA,#"START_PRINT",#CRCKey.VALUE_SEND_DATA,
-                                CRCKey.KEY_PRINTER_ID   : self.__printerId,
-                                CRCKey.KEY_ORDER_ID     : self.__orderId,#22 #self.__orderId,
-                                CRCKey.KEY_PRINTER_MSG  : [
-                                                            [
-                                                                {
-                                                                    CRCKey.KEY_TEXT     : "No." + str(self.__orderNumber),
-                                                                    CRCKey.KEY_COLOR    : "0x000000"
-                                                                }
-                                                            ],
-                                                            [
-                                                                {
-                                                                    CRCKey.KEY_TEXT     : self.__orderPhoneInfo,
-                                                                    "color": "0x000000" 
-                                                                }
-                                                            ],
-                                                            [
-                                                                menuNamefirst,
-                                                                menuNameSecond
-                                                            ]
-                                                        ]
-                            }
-        
-        self.__crcComm.write("print/rms", json.dumps(printMsg))
-        CDRLog.print(f"write MQTT : {printMsg}")   # mini test
-
-
-
-    def __mbrushPrinterMsgThreadHandler(self) :
-        '''
-        mBrush 프린터에서 수신된 메세지 처리 스레드\n
-        '''
-
-        while MainData.isRunningTPMProgram and self.__isCRCCommThreadRunning :
-            
-            if self.__mbrushPrinterMsgQueue.empty() == False:
-
-                reqMsgData  :dict = self.__mbrushPrinterMsgQueue.get()
-                
-                # 프린터 상태 값 저장
-                if CRCKey.KEY_EVENT_ID in reqMsgData:
-                    self.__printerState = reqMsgData[CRCKey.KEY_EVENT_ID]        
-
-        CDRLog.print("============ __mbrushPrinterMsgThreadHandler terminated...")
-
-    
 
     
     def brewDelonghiEspresso(self, delonghiComm:BLEVar):
@@ -837,7 +644,47 @@ class TPMSysFuncManager():
                     delonghiComm.write(DelonghiPacket.REQ_BREW_AMERICANO)  
                     delonghiComm.clearReadPacket()
         
+    def brewDelonghiHotWater(self, delonghiComm:BLEVar) :
+        '''
+        시스템 함수 : 드롱기 Americano 추출
+        '''
+        delonghiComm.write(DelonghiPacket.REQ_BREW_HOT_WATER)
 
+        readBLEDataValue        :bytearray          = None
+        readCount               :int            = 0
+
+        delonghiComm.clearReadPacket()
+        while MainData.isRunningTPMProgram == True:
+
+            readBLEDataValue = delonghiComm.read()
+
+            if readBLEDataValue == None:
+                
+                time.sleep(0.1)
+                readCount += 1
+                # 문제 : 일정 확률로 write에 대한 상대측 응답이 회신되지 않는 case 발생.
+                # 대응 : 
+                #   1) 마지막에 성공한 write 값을 저장 
+                #   2) read 요청 후 응답 대기.  
+                #   3) 일정 횟수(또는 시간)동안 응답없으면, 이슈 상황이라 판단. -> 마지막 write 데이터를 다시 송신   
+                if readCount == 5:
+                    readCount = 0
+                    CDRLog.print("아메리카노 추출 명령 재전송(None)")
+                    delonghiComm.write(DelonghiPacket.REQ_BREW_HOT_WATER)
+
+            else:
+                # 아래의 사이트에서 음료 brew/stop 명령에 대한 응답 패킷이 회신되는 것을 확인
+                # https://grack.com/blog/2022/12/02/hacking-bluetooth-to-brew-coffee-on-github-actions-part-2/
+                
+                # 추출 명령에 대한 응답 패킷 회신되면 while문 탈출 후 메서드드 작업 종료.
+                if readBLEDataValue == DelonghiPacket.RESPONSE_BREW_CMD:
+                    CDRLog.print("아메리카노 추출 명령 전송 성공!")
+                    break
+                else: #회신된 패킷이 추출 명령에 대한 응답 패킷이 아니라면 다시 추출 명령 재전송
+                    CDRLog.print(f"아메리카노 추출 명령 재전송(response) {readBLEDataValue}")
+                    delonghiComm.write(DelonghiPacket.REQ_BREW_HOT_WATER)  
+                    delonghiComm.clearReadPacket()
+        
 
     def disconnectDelonghi(self, delonghiComm:BLEVar) :
         '''
@@ -1078,28 +925,7 @@ class TPMSysFuncManager():
 
 
 
-    def sendPrintCmd(self, mqttVar :MqttVar, orderid : int, printerId : int) :
-        '''
-        각인기 mbrush 실행 명령
-        '''
-        # Print 명령 전달
-        msg_print = {
-            "reqId":"START_PRINT",
-            "printerId": printerId,
-            "orderId": orderid
-        }
-        msg_str = json.dumps(msg_print)
-        
-        mqttVar.write("print/rms",msg_str)
-        CDRLog.print(f"write MQTT : {msg_print}")   # mini test
-        self.__printerState = None
-
-    
-    def getPrintState(self, mqttVar:MqttVar, printerId : int) -> str:
-        '''
-        각인기 mbrush 상태 정보 반환
-        '''
-        return self.__printerState          
+     
 
     def initIndyModbusCmd(self, indyComm:ModbusTCPVar):
         while True : 

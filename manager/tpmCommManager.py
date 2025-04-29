@@ -2,7 +2,7 @@ import time, datetime
 import socket
 import json
 import threading
-
+import select
 from cdrutils.log import CDRLog
 
 from const.programVarType import ProgramVarType
@@ -94,8 +94,54 @@ class TPMCommManager():
             CDRLog.print("클라이언트와 연결 분리 -> 서버 다시 오픈")
             self.openServer()
     
+    # def communicationThreadHandler(self, ip: str, port: int):
+    #     '''
+    #     ### TPM과 통신 처리 전용 쓰레드 
+    #     '''
+    #     self.__socketServer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #     self.__socketServer.bind((ip, port))
+    #     self.__socketServer.listen(1)
+    #     CDRLog.print(f"Server opened on {ip}:{port}")
 
+    #     while not MainData.isTerminatedTMMProcess:
+    #         self.__socketServer.settimeout(None)  # Non-blocking 상태로 변경
+    #         readable, _, _ = select.select([self.__socketServer], [], [], 1)  # 1초 대기
 
+    #         if self.__socketServer in readable:
+    #             try:
+    #                 self.__connectedSocket, address = self.__socketServer.accept()
+    #                 self.__connectedSocket.settimeout(1)
+    #                 CDRLog.print(f"Connection success with {address}")
+    #                 self.__isRunningServer = True
+    #                 break
+    #             except Exception as e:
+    #                 CDRLog.print(f"Error during accept: {e}")
+
+    #     try:
+    #         while self.__isRunningServer:
+    #             if self.__connectedSocket is None:
+    #                 break
+
+    #             readable, _, _ = select.select([self.__connectedSocket], [], [], 1)  # 1초 대기
+    #             if self.__connectedSocket in readable:
+    #                 try:
+    #                     rawData = self.__connectedSocket.recv(65535)
+    #                     if len(rawData) == 0:
+    #                         break
+    #                     jsonData = json.loads(rawData.decode())
+    #                     self.__mainQueue.put(SysQueueData(SysQueueData.RECEIVE_TPM_DATA, jsonData))
+    #                 except socket.timeout:
+    #                     pass
+    #                 except Exception as e:
+    #                     CDRLog.print(f"Error during data processing: {e}")
+    #                     break
+    #     except Exception as err:
+    #         CDRLog.print(f"Error: {err}")
+    #         self.closeServer()
+    #         self.__mainQueue.put(SysQueueData(SysQueueData.CLOSED_TPM_SERVER))
+    #     finally:
+    #         CDRLog.print("============ communicationThreadHandler terminated...")
+            
     def communicationThreadHandler(self, ip:str, port:int):
         '''
         ### TPM과 통신 처리 전용 쓰레드 

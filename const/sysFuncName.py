@@ -22,6 +22,10 @@ class _SysFuncName():
         return "FR_Read"
     
     @constant
+    def SEND_FR_MODBUS_CMD() -> str:
+        return "sendFRModbusCmd"
+    
+    @constant
     def RUN_RWRP_COMM() -> str:
         return "Run_RWRP_Communicator"
     
@@ -54,31 +58,7 @@ class _SysFuncName():
     def JODELL_GRIPPER_RELEASE() -> str:
         return "releaseJodellGripper"
     
-    @constant
-    def PUB_CRC_ORDER_COMPLETE() -> str:
-        return "publishCRCOrderComplete"
-    
-    @constant
-    def GET_CRC_ORDER_MENU() -> str:
-        return "getCRCOrderMenu"
-    
-    @constant
-    def GET_CRC_ORDER_MENU_LIST() -> str:
-        return "getCRCOrderMenuList"
-    
-    @constant
-    def GET_CRC_ORDER_QUANTITY() -> str:
-        return "getCRCOrderQuantity"
-    
-    @constant
-    def GET_CRC_ORDER_ID() -> str:
-        return "getCRCOrderId"
-    
-
-    @constant
-    def RUN_CRC_COMM() -> str:
-        return "runCRCCommunication"
-    
+ 
     @constant
     def BREW_DELONGHI_ESPRESSO() -> str:
         return "brewDelonghiEspresso"
@@ -99,17 +79,53 @@ class _SysFuncName():
     def IS_DELONGHI_IDLE() -> str:
         return "isDelonghiIdle"
     
+
+    
+
+    
+
+    # @constant
+    # def SEND_CRC_ORDER_COMPLETE() -> str:    #def PUB_CRC_ORDER_COMPLETE() -> str:
+    #     return "sendCRCOrderComplete"    #    return "publishCRCOrderComplete"
+    
+    # @constant
+    # def GET_CRC_ORDER_MENU() -> str:
+    #     return "getCRCOrderMenu"
+    
+    # @constant
+    # def GET_CRC_ORDER_MENU_LIST() -> str:
+    #     return "getCRCOrderMenuList"
+    
+    # @constant
+    # def GET_CRC_ORDER_QUANTITY() -> str:
+    #     return "getCRCOrderQuantity"
+    
+    # @constant
+    # def GET_CRC_ORDER_ID() -> str:
+    #     return "getCRCOrderId"
     @constant
-    def SEND_FR_MODBUS_CMD() -> str:
-        return "sendFRModbusCmd"
+    def GET_CRC_ORDER() -> str:
+        return "getCRCOrder"
     
     @constant
-    def SEND_PRINT_INFO() -> str:
-        return "sendPrintInfo"
+    def SET_CRC_ORDER_DONE() -> str:
+        return "setCRCOrderMakeDone"
+
+    @constant
+    def RUN_CRC_COMM() -> str:
+        return "runCRCCommunication"
+    
+    # @constant
+    # def GET_CRC_ORDER_NUMBER() -> str:
+    #     return "getCRCOrderNumber"
     
     @constant
-    def SEND_PRINT_CMD() -> str:
-        return "sendPrintCmd"
+    def SEND_PRINT_DATA() -> str:#def SEND_PRINT_INFO() -> str:
+        return "sendPrintData"#    return "sendPrintInfo"
+    
+    @constant                       #@constant
+    def SEND_PRINT_START() -> str:    #def SEND_PRINT_CMD() -> str:
+        return "sendPrintStart"       #    return "sendPrintCmd"
     
     @constant
     def GET_PRINT_STATE() -> str:
@@ -119,9 +135,6 @@ class _SysFuncName():
     def ORDER_UI_SENDDATA() -> str:
         return "order_UI_SendData"
 
-    @constant
-    def GET_CRC_ORDER_NUMBER() -> str:
-        return "getCRCOrderNumber"
     
 SysFuncName = _SysFuncName()
 

@@ -88,7 +88,7 @@ class TPMProgramManager():
         TPM으로 작성된 사용자 프로그램 처리 쓰레드
         '''
 
-        self.__tpmSysFuncManager.initSysFuncVar()   
+        #self.__tpmSysFuncManager.initSysFuncVar()   
 
 
         self.__programNodeList              = programData[TPMKey.TREE_PROGRAM]
@@ -293,7 +293,7 @@ class TPMProgramManager():
         self.__removeAllUserEvents()
 
 
-        self.__tpmSysFuncManager.initSysFuncVar()
+        #self.__tpmSysFuncManager.initSysFuncVar()
 
         
 
@@ -1578,85 +1578,115 @@ class TPMProgramManager():
             self.__tpmSysFuncManager.releaseJodellGripper(tcpIPVar)    
         
         
-        elif funcName == SysFuncName.PUB_CRC_ORDER_COMPLETE:
+        # elif funcName == SysFuncName.SEND_CRC_ORDER_COMPLETE: #PUB_CRC_ORDER_COMPLETE:
             
-            mqttVar         :MqttVar    = None
-            storeId         :int        = -1
-            orderId         :int        = -1
-            paramName                   = None
-            paramValue                  = None
+        #     # mqttVar         :MqttVar    = None
+        #     # storeId         :int        = -1
+        #     orderId         :int        = -1
+        #     paramName                   = None
+        #     paramValue                  = None
             
-            for param in paramValueList :
+        #     for param in paramValueList :
 
-                paramName   = param[TPMKey.PARAM_NAME]
-                paramValue  = param[TPMKey.PARAM_VALUE]
+        #         paramName   = param[TPMKey.PARAM_NAME]
+        #         paramValue  = param[TPMKey.PARAM_VALUE]
 
-                if paramName == SysFuncKeyword.MQTT_VAR:
+        #         # if paramName == SysFuncKeyword.MQTT_VAR:
 
-                    mqttVar     = self.__userVarList[paramValue]
+        #         #     mqttVar     = self.__userVarList[paramValue]
 
-                elif paramName == SysFuncKeyword.STORE_ID:
+        #         # elif paramName == SysFuncKeyword.STORE_ID:
                     
-                    # str 타입이면, 변수
-                    if type(paramValue) == str :
-                        storeIdVar  :PrimitiveVar   = self.__userVarList[paramValue] 
-                        storeId                     = storeIdVar.getValue()
-                    else :
-                        storeId                     = paramValue
+        #         #     # str 타입이면, 변수
+        #         #     if type(paramValue) == str :
+        #         #         storeIdVar  :PrimitiveVar   = self.__userVarList[paramValue] 
+        #         #         storeId                     = storeIdVar.getValue()
+        #         #     else :
+        #         #         storeId                     = paramValue
 
-                elif paramName == SysFuncKeyword.ORDER_ID:          
+        #         if paramName == SysFuncKeyword.ORDER_ID:          
                     
-                    # str 타입이면, 변수
-                    if type(paramValue) == str :
-                        orderIdVar  :PrimitiveVar   = self.__userVarList[paramValue]
-                        orderId                     = orderIdVar.getValue()
-                    else :
-                        orderId                     = paramValue              
+        #             # str 타입이면, 변수
+        #             if type(paramValue) == str :
+        #                 orderIdVar  :PrimitiveVar   = self.__userVarList[paramValue]
+        #                 orderId                     = orderIdVar.getValue()
+        #             else :
+        #                 orderId                     = paramValue              
             
-            self.__tpmSysFuncManager.publishCRCOrderComplete(mqttVar, storeId, orderId)
+        #     self.__tpmSysFuncManager.sendCRCOrderComplete(orderId) #publishCRCOrderComplete(mqttVar, storeId, orderId)
 
-        elif funcName == SysFuncName.GET_CRC_ORDER_MENU:
+        # elif funcName == SysFuncName.GET_CRC_ORDER_MENU:
 
-            returnVar   :PrimitiveVar = self.__userVarList[returnValueList[0][TPMKey.RETURN_VALUE]]    
-            returnVar.setValue(self.__tpmSysFuncManager.getCRCOrderMenu())
+        #     returnVar   :PrimitiveVar = self.__userVarList[returnValueList[0][TPMKey.RETURN_VALUE]]    
+        #     returnVar.setValue(self.__tpmSysFuncManager.getCRCOrderMenu())
 
         
-        elif funcName == SysFuncName.GET_CRC_ORDER_MENU_LIST:
+        # elif funcName == SysFuncName.GET_CRC_ORDER_MENU_LIST:
 
-            returnVar   :PrimitiveVar = self.__userVarList[returnValueList[0][TPMKey.RETURN_VALUE]] 
-            returnVar.setValue(self.__tpmSysFuncManager.getCRCOrderMenuList())
+        #     returnVar   :PrimitiveVar = self.__userVarList[returnValueList[0][TPMKey.RETURN_VALUE]] 
+        #     returnVar.setValue(self.__tpmSysFuncManager.getCRCOrderMenuList())
         
 
-        elif funcName == SysFuncName.GET_CRC_ORDER_QUANTITY: #주문 갯수
+        # elif funcName == SysFuncName.GET_CRC_ORDER_QUANTITY: #주문 갯수
 
-            returnVar   :PrimitiveVar = self.__userVarList[returnValueList[0][TPMKey.RETURN_VALUE]] 
-            returnVar.setValue(self.__tpmSysFuncManager.getCRCOrderNum())
-
-
-        elif funcName == SysFuncName.GET_CRC_ORDER_NUMBER: #주문 번호(ID랑은 다른 번호)
-
-            returnVar   :PrimitiveVar = self.__userVarList[returnValueList[0][TPMKey.RETURN_VALUE]] 
-            returnVar.setValue(self.__tpmSysFuncManager.getCRCOrderNumber())            
+        #     returnVar   :PrimitiveVar = self.__userVarList[returnValueList[0][TPMKey.RETURN_VALUE]] 
+        #     returnVar.setValue(self.__tpmSysFuncManager.getCRCOrderNum())
 
 
-        elif funcName == SysFuncName.GET_CRC_ORDER_ID:
+        # elif funcName == SysFuncName.GET_CRC_ORDER_NUMBER: #주문 번호(ID랑은 다른 번호)
 
+        #     returnVar   :PrimitiveVar = self.__userVarList[returnValueList[0][TPMKey.RETURN_VALUE]] 
+        #     returnVar.setValue(self.__tpmSysFuncManager.getCRCOrderNumber())            
+
+
+        # elif funcName == SysFuncName.GET_CRC_ORDER_ID:
+
+        #     for param in returnValueList:
+                
+        #         paramName   = param[TPMKey.RETURN_NAME]
+        #         paramValue  = param[TPMKey.RETURN_VALUE]
+
+        #         if paramName == SysFuncKeyword.ORDER_ID:
+
+        #             returnVar   :PrimitiveVar = self.__userVarList[paramValue] 
+        #             returnVar.setValue(self.__tpmSysFuncManager.getCRCOrderId())
+
+
+        elif funcName == SysFuncName.GET_CRC_ORDER:
+            
+            
+            order_Id, order_Number, order_Menu_List =  self.__tpmSysFuncManager.getCRCOrder()
+            
             for param in returnValueList:
+                if TPMKey.PARAM_NAME in param == False or TPMKey.PARAM_VALUE in param == False:
+                    continue
                 
                 paramName   = param[TPMKey.RETURN_NAME]
                 paramValue  = param[TPMKey.RETURN_VALUE]
 
                 if paramName == SysFuncKeyword.ORDER_ID:
-
+                    
                     returnVar   :PrimitiveVar = self.__userVarList[paramValue] 
-                    returnVar.setValue(self.__tpmSysFuncManager.getCRCOrderId())
+                    returnVar.setValue(order_Id)
 
+                elif paramName == SysFuncKeyword.ORDER_NUM:
+                    returnVar   :PrimitiveVar = self.__userVarList[paramValue] 
+                    returnVar.setValue(order_Number)
 
-        elif funcName == SysFuncName.RUN_CRC_COMM:
+                elif paramName == SysFuncKeyword.ORDER_MENU_LIST:
+                    returnVar   :PrimitiveVar = self.__userVarList[paramValue] 
+                    startIndex      :int = 0
+                    endIndex        :int = len(order_Menu_List)
+                    returnVar.setListValue(startIndex, endIndex, order_Menu_List)
+
             
-            mqttVar         :MqttVar    = None
-            storeId         :int        = -1
-            printerId       :int        = -1
+            
+            
+             
+        elif funcName == SysFuncName.SET_CRC_ORDER_DONE:
+
+            orderId           :int        = -1
+            orderMenuId       :int        = -1
             paramName                   = None
             paramValue                  = None
 
@@ -1668,10 +1698,47 @@ class TPMProgramManager():
                 paramName               = param[TPMKey.PARAM_NAME]
                 paramValue              = param[TPMKey.PARAM_VALUE]
 
-                if paramName == SysFuncKeyword.MQTT_VAR:
-                    mqttVar = self.__userVarList[paramValue]
+                if paramName == SysFuncKeyword.ORDER_ID:
+                    
+                    # str 타입이면, 변수
+                    if type(paramValue) == str :
+                        orderIdVar  :PrimitiveVar   = self.__userVarList[paramValue] 
+                        orderId                     = orderIdVar.getValue()
+                    else :
+                        orderId                     = paramValue
+
+                # elif paramName == SysFuncKeyword.ORDER_MENU:
+                #     # str 타입이면, 변수
+                #     if type(paramValue) == str :
+                #         orderMenuIdVar  :PrimitiveVar   = self.__userVarList[paramValue] 
+                #         orderMenuId                     = orderMenuIdVar.getValue()
+                #     else :
+                #         orderMenuId                     = paramValue
+
+            self.__tpmSysFuncManager.setCRCOrderMakeDone( orderId)
+    
+
+        elif funcName == SysFuncName.RUN_CRC_COMM:
+            
+            #
+            storeId         :int        = -1
+            printerId       :int        = -1
+            #maxOrderNum     :int        = -1
+            paramName                   = None
+            paramValue                  = None
+
+            for param in paramValueList:
                 
-                elif paramName == SysFuncKeyword.STORE_ID:
+                if TPMKey.PARAM_NAME in param == False or TPMKey.PARAM_VALUE in param == False:
+                    continue
+
+                paramName               = param[TPMKey.PARAM_NAME]
+                paramValue              = param[TPMKey.PARAM_VALUE]
+
+                #if paramName == SysFuncKeyword.MQTT_VAR:
+                #    mqttVar = self.__userVarList[paramValue]
+                
+                if paramName == SysFuncKeyword.STORE_ID:
                     
                     # str 타입이면, 변수
                     if type(paramValue) == str :
@@ -1688,15 +1755,15 @@ class TPMProgramManager():
                     else :
                         printerId                     = paramValue
 
-                elif paramName == SysFuncKeyword.MAX_ORDER_QUANTITY:
-                    # str 타입이면, 변수
-                    if type(paramValue) == str :
-                        maxOrderNumVar  :PrimitiveVar   = self.__userVarList[paramValue] 
-                        maxOrderNum                     = maxOrderNumVar.getValue()
-                    else :
-                        maxOrderNum                     = paramValue
+                # elif paramName == SysFuncKeyword.MAX_ORDER_QUANTITY:
+                #     # str 타입이면, 변수
+                #     if type(paramValue) == str :
+                #         maxOrderNumVar  :PrimitiveVar   = self.__userVarList[paramValue] 
+                #         maxOrderNum                     = maxOrderNumVar.getValue()
+                #     else :
+                #         maxOrderNum                     = paramValue
 
-            self.__tpmSysFuncManager.runCRCCommunication(mqttVar, storeId, printerId, maxOrderNum)
+            self.__tpmSysFuncManager.runCRCCommunication( storeId, printerId)
  
         
         elif funcName == SysFuncName.GET_RWRP_COLLISION:
@@ -1834,7 +1901,7 @@ class TPMProgramManager():
         elif funcName == SysFuncName.SEND_PRINT_INFO:
 
             orderMenuId         :int            = -1    
-            
+            orderId           :int            = -1
             for param in paramValueList:
 
                 paramName               = param[TPMKey.PARAM_NAME]
@@ -1848,15 +1915,22 @@ class TPMProgramManager():
                     elif param["assignType"] == ValueAssignType.VAR:    
                         orderMenuIdVar  :PrimitiveVar   = self.__userVarList[paramValue]
                         orderMenuId                     = orderMenuIdVar.getValue()  
+                elif paramName == SysFuncKeyword.ORDER_ID:
+                    
+                    if param["assignType"] == ValueAssignType.INPUT:  
+                        orderId                     = paramValue
 
-            self.__tpmSysFuncManager.sendPrintData(orderMenuId)
+                    elif param["assignType"] == ValueAssignType.VAR:    
+                        orderIdVar  :PrimitiveVar   = self.__userVarList[paramValue]
+                        orderId                     = orderIdVar.getValue()
+
+            self.__tpmSysFuncManager.sendPrintData(orderId, orderMenuId)
 
 
-        elif funcName == SysFuncName.SEND_PRINT_CMD:
+        elif funcName == SysFuncName.SEND_PRINT_START: #SEND_PRINT_CMD:
             
-            mqttVar         :MqttVar    = None
             orderId         :int        = -1
-            printerId       :int        = -1
+
             paramName                   = None
             paramValue                  = None
 
@@ -1864,9 +1938,6 @@ class TPMProgramManager():
 
                 paramName   = param[TPMKey.PARAM_NAME]
                 paramValue  = param[TPMKey.PARAM_VALUE]
-
-                if paramName == SysFuncKeyword.MQTT_VAR:
-                    mqttvar = self.__userVarList[paramValue]
 
                 if paramName == SysFuncKeyword.ORDER_ID:
                     
@@ -1877,45 +1948,36 @@ class TPMProgramManager():
                         orderIdVar  :PrimitiveVar   = self.__userVarList[paramValue]
                         orderId                     = orderIdVar.getValue()  
 
-                if paramName == SysFuncKeyword.PRINTER_ID:
-                    
-                    if param["assignType"] == ValueAssignType.INPUT:  
-                        printerId                     = paramValue
-
-                    elif param["assignType"] == ValueAssignType.VAR:    
-                        printerIdVar  :PrimitiveVar   = self.__userVarList[paramValue]
-                        printerId                     = printerIdVar.getValue()  
-
-            self.__tpmSysFuncManager.sendPrintCmd(mqttvar, orderId, printerId)
+            self.__tpmSysFuncManager.sendPrintStart(orderId)
 
 
         elif funcName == SysFuncName.GET_PRINT_STATE:
 
-            mqttVar         :MqttVar    = None
-            orderId         :int        = -1
-            printerId       :int        = -1
-            paramName                   = None
-            paramValue                  = None
+            # mqttVar         :MqttVar    = None
+            # orderId         :int        = -1
+            # printerId       :int        = -1
+            # paramName                   = None
+            # paramValue                  = None
 
-            for param in paramValueList:
+            # for param in paramValueList:
 
-                paramName   = param[TPMKey.PARAM_NAME]
-                paramValue  = param[TPMKey.PARAM_VALUE]
+            #     paramName   = param[TPMKey.PARAM_NAME]
+            #     paramValue  = param[TPMKey.PARAM_VALUE]
 
-                if paramName == SysFuncKeyword.MQTT_VAR:
-                    mqttvar = self.__userVarList[paramValue]
+            #     if paramName == SysFuncKeyword.MQTT_VAR:
+            #         mqttvar = self.__userVarList[paramValue]
 
-                if paramName == SysFuncKeyword.PRINTER_ID:
+            #     if paramName == SysFuncKeyword.PRINTER_ID:
                     
-                    if param["assignType"] == ValueAssignType.INPUT:  
-                        printerId                     = paramValue
+            #         if param["assignType"] == ValueAssignType.INPUT:  
+            #             printerId                     = paramValue
 
-                    elif param["assignType"] == ValueAssignType.VAR:    
-                        printerIdVar  :PrimitiveVar   = self.__userVarList[paramValue]
-                        printerId                     = printerIdVar.getValue()  
+            #         elif param["assignType"] == ValueAssignType.VAR:    
+            #             printerIdVar  :PrimitiveVar   = self.__userVarList[paramValue]
+            #             printerId                     = printerIdVar.getValue()  
 
             returnVar   :PrimitiveVar = self.__userVarList[returnValueList[0][TPMKey.RETURN_VALUE]] 
-            returnVar.setValue(self.__tpmSysFuncManager.getPrintState(bleVar, printerId))
+            returnVar.setValue(self.__tpmSysFuncManager.getPrintState())
         
         elif funcName == SysFuncName.ORDER_UI_SENDDATA:            
             tcpIPVar    :TcpIPVar = None

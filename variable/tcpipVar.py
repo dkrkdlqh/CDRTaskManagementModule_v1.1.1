@@ -13,12 +13,13 @@ from const.event import Event
 
 class TcpIPVar :
 
-    def __init__(self, eventCallback:Callable[[int, Any], None]) :
+    def __init__(self, eventCallback:Callable[[int, Any], None], name=None) :
 
         self.__eventCallback    :Callable[[int], None]  = eventCallback
         self.__tcpClient        :socket.socket          = None
         self.__server_addr: str | None = None
         self.__server_port: int | None = None
+        self.name = name
 
 
 
@@ -76,7 +77,7 @@ class TcpIPVar :
 
     #mini gripper 250109 
     def write(self, writeData:str, writeType :int = 0):
-
+        CDRLog.print(f"TCP write : {writeData}")
         try : 
             if writeType == 0 :
                 self.__tcpClient.sendall((writeData + '\n').encode(encoding='utf-8'))

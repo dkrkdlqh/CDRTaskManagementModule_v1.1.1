@@ -4,10 +4,10 @@ from const.mathOperatorType import MathOperatorType
 
 class PrimitiveVar :
 
-    def __init__(self, value) :
+    def __init__(self, value, name=None) :
 
         self.__value = value
-
+        self.name = name
 
     def __del__(self):
         print('PrimitiveVar instance is deleted.')

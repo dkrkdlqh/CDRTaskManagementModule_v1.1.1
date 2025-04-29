@@ -1,8 +1,10 @@
 import json
 import traceback
-
+from const.event import Event
 from cdrutils.log import CDRLog 
+from data.mainData import MainData
 
+import sys
 
 
 class CDRUtil:
@@ -98,3 +100,50 @@ class CDRUtil:
 
         # CDRLog.print(f"callack : {packetStrList}")
         return packetStrList
+    @classmethod
+    def commVarEventCallback(self, eventId:int, data):
+        '''
+        통신 변수 이벤트 처리 전용 콜백 함수
+        '''
+        
+        # 객체의 클래스 이름과 특정 속성(예: name)을 가져옴
+        targetVar = type(data).__name__
+        
+        
+        if hasattr(data, 'name') and data.name:
+            targetVar = f"{targetVar} ({data.name})"
+
+        # if data == self.__plcComm:
+        #     targetVar = "PLC"
+        # elif data == self.__delonghi01Comm:
+        #     targetVar = "1번 드롱기"
+        # elif data == self.__delonghi02Comm:
+        #     targetVar = "2번 드롱기"
+        # elif data == self.__delonghiContainer1:
+        #     targetVar = "1번 드롱기 컨테이너"
+        # elif data == self.__delonghiContainer2:
+        #     targetVar = "2번 드롱기 컨테이너"
+        # elif data == self.__cupDispenser:
+        #     targetVar = "컵 디스펜서"   
+        # elif data == self.__FR5Comm:
+        #     targetVar = "FR5"   
+        # elif data == self.__DHGripperComm:
+        #     targetVar = "DH Gripper"    
+        
+        
+        if eventId == Event.COMM_VAR_DISCONNECTED:
+
+            CDRLog.print(f"{targetVar} 통신 끊어짐")
+            self.terminateSystem()
+
+        elif eventId == Event.COMM_VAR_FAILED_TO_CONNECT:
+            
+            CDRLog.print(f"{targetVar} 통신 연결 실패")
+            self.terminateSystem()
+            
+            
+    @classmethod
+    def terminateSystem(self):
+        MainData.isRunningTPMProgram    = False
+        sys.exit()
+        

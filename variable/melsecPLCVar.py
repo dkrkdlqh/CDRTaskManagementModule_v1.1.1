@@ -11,11 +11,11 @@ from const.event import Event
 
 class MelsecPLCVar :
 
-    def __init__(self, eventCallback:Callable[[int, Any], None]) :
+    def __init__(self, eventCallback:Callable[[int, Any], None], name=None) :
 
         self.__eventCallback    :Callable[[int], None]  = eventCallback
         self.__plcClient                                = None    
-        
+        self.name = name  # 객체 이름 저장
     
     
     def __del__(self) :

@@ -12,11 +12,11 @@ from data.mainData import MainData
 
 class ModbusTCPVar :
 
-    def __init__(self, eventCallback:Callable[[int, Any], None]) :
+    def __init__(self, eventCallback:Callable[[int, Any], None], name=None) :
         
         self.__eventCallback    :Callable[[int], None]  = eventCallback
         self.__modbusClient     :ModbusClient           = None
-        
+        self.name = name
 
 
     def __del__(self) :

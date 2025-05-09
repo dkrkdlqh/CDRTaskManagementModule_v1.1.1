@@ -741,7 +741,7 @@ class TPMSysFuncManager():
 
             if readBLEDataValue == None:
                 
-                time.sleep(0.1)
+                time.sleep(0.2)
                 readCount += 1
                 # 문제 : 일정 확률로 write에 대한 상대측 응답이 회신되지 않는 case 발생.
                 # 대응 : 
@@ -771,45 +771,6 @@ class TPMSysFuncManager():
     # 커피 추출 시작| [0xd0, 0x12, 0x75, 0x0f, 0x01, 0x05, 0x00, 0x00, 0x00, 0x07, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x5c, 0xa7]
     # ------------------------------------------------------------------------------------------------------------------------------------ 
     def __generateDelonghiStateCode(self, statusData:bytearray) -> int:
-
-        # Status  :int = DelonghiState.READY
-        
-        # if stateData != None and len(stateData) > 0 :
-
-        #     if stateData[5] == "05":
-
-        #         if stateData[7] =="02" :
-        #             # print('커피 찌꺼기 통 가득 참')
-        #             Status = DelonghiState.ERR_FULL_TRASH
-
-        #         if stateData[7] =="04" :
-        #             # print('석회 제거 필요')
-        #             Status = DelonghiState.ERR_POLLUTION
-
-        #     elif stateData[5] == "15" :
-        #         # print('물탱크 열림')
-        #         Status = DelonghiState.ERR_OPENED_WATER_TANK
-
-        #     elif stateData[5] == "45" :
-        #         # print('물 부족')
-        #         Status = DelonghiState.ERR_EMPTY_WATER
-
-        #     elif stateData[5] == "0d" :
-        #         # print('커피 찌꺼기 통 열림')
-        #         Status = DelonghiState.ERR_OPENED_TRASH_CONTAINER
-            
-        #     elif stateData[7] == "20" :
-        #         # print('커피 부족')
-        #         Status = DelonghiState.ERR_EMPTY_COFFEE_BEANS
-            
-        #     elif stateData[5] =="03" :
-        #         # print('추출 중')
-        #         Status = DelonghiState.BREWING
-
-        #     if stateData[11] != "00":
-        #         Status = DelonghiState.BREWING
-       
-        # CDRLog.print(f"packet data is : {CDRUtil.convertBytesToStrList(statusData)}")
 
         curStatus  :int = DelonghiState.NOT_READY
 
@@ -874,6 +835,47 @@ class TPMSysFuncManager():
         # CDRLog.print(f"I know that delonghi status is : {curStatus}")
 
         return curStatus
+    
+    
+        # Status  :int = DelonghiState.READY
+        
+        # if stateData != None and len(stateData) > 0 :
+
+        #     if stateData[5] == "05":
+
+        #         if stateData[7] =="02" :
+        #             # print('커피 찌꺼기 통 가득 참')
+        #             Status = DelonghiState.ERR_FULL_TRASH
+
+        #         if stateData[7] =="04" :
+        #             # print('석회 제거 필요')
+        #             Status = DelonghiState.ERR_POLLUTION
+
+        #     elif stateData[5] == "15" :
+        #         # print('물탱크 열림')
+        #         Status = DelonghiState.ERR_OPENED_WATER_TANK
+
+        #     elif stateData[5] == "45" :
+        #         # print('물 부족')
+        #         Status = DelonghiState.ERR_EMPTY_WATER
+
+        #     elif stateData[5] == "0d" :
+        #         # print('커피 찌꺼기 통 열림')
+        #         Status = DelonghiState.ERR_OPENED_TRASH_CONTAINER
+            
+        #     elif stateData[7] == "20" :
+        #         # print('커피 부족')
+        #         Status = DelonghiState.ERR_EMPTY_COFFEE_BEANS
+            
+        #     elif stateData[5] =="03" :
+        #         # print('추출 중')
+        #         Status = DelonghiState.BREWING
+
+        #     if stateData[11] != "00":
+        #         Status = DelonghiState.BREWING
+       
+        # CDRLog.print(f"packet data is : {CDRUtil.convertBytesToStrList(statusData)}")
+
 
 
 

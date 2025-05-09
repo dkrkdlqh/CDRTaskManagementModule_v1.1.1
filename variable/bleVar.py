@@ -31,7 +31,7 @@ class BLEVar :
         self.__writePacket      :str                        = None
         self.__isConnected      :bool                       = False
         
-        self.__readPacketList   :list[bytearray]            = []
+        #self.__readPacketList   :list[bytearray]            = [] 250428
         self.__readPacket       :bytearray                  = None    
         self.name = name
 
@@ -178,7 +178,7 @@ class BLEVar :
         변수에 저장된 패킷 정보 모두 초기화
         '''
 
-        self.__readPacketList   = []
+        #self.__readPacketList   = [] 250428
         self.__readPacket       = None
 
 
@@ -216,22 +216,22 @@ class BLEVar :
             return returnValue
     
 
-
-    def readFirstPacket(self) -> list[bytearray]:
-        '''
-        리스트 변수에 저장된 첫번째 패킷 읽기
-        '''    
+    #250428 미사용 주석처리리
+    # def readFirstPacket(self) -> list[bytearray]:
+    #     '''
+    #     리스트 변수에 저장된 첫번째 패킷 읽기
+    #     '''    
         
-        if self.__bleClient != None and self.__bleClient.is_connected == False:
-            if MainData.isRunningTPMProgram == True and self.__eventCallback != None:
-                self.__eventCallback(Event.COMM_VAR_DISCONNECTED, self)
-                #mini 250114 임시 테스트
-                CDRLog.print(f"read_f")                
-        if len(self.__readPacketList) == 0:
-            return None
+    #     if self.__bleClient != None and self.__bleClient.is_connected == False:
+    #         if MainData.isRunningTPMProgram == True and self.__eventCallback != None:
+    #             self.__eventCallback(Event.COMM_VAR_DISCONNECTED, self)
+    #             #mini 250114 임시 테스트
+    #             CDRLog.print(f"read_f")                
+    #     if len(self.__readPacketList) == 0:
+    #         return None
         
-        else:
-            return self.__readPacketList.pop(0)
+    #     else:
+    #         return self.__readPacketList.pop(0)
 
 
 
@@ -282,10 +282,10 @@ class BLEVar :
             self.__readPacket = data #self.__convertBytesToStrList(data)
 
             # 리스트의 read 패킷 개수가 100개가 넘지 않도록 조절 
-            if len(self.__readPacketList) > 100:
-                self.__readPacketList.pop(0)
+            # if len(self.__readPacketList) > 100:
+            #     self.__readPacketList.pop(0)
 
-            self.__readPacketList.append(self.__readPacket.copy())
+            # self.__readPacketList.append(self.__readPacket.copy()) 250428
 
 
 

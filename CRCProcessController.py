@@ -208,7 +208,7 @@ class CRCProcessController():
                 # 제조 완료 상태로 변경
                 
                 # # 테스트용 
-                # time.(5)
+                # time.sleep(5)
                 # CDRLog.print('ORDER_STATE_PICKUP_ENABLE')
                 # self.__crcManager.orderHandler.updateOrderState(order, self.__crcManager.ORDER_STATE_PICKUP_ENABLE)
         
@@ -241,8 +241,10 @@ class CRCProcessController():
                     self.__printerState = 1
                     # 프린터에 컵 프린트 내용 전달
                     self.__crcManager.publishCRCPrintData(order.orderId, order.menuId)
+                    time.sleep(1)
                     # 프린터에 컵 프린트 시작 명령
                     self.__crcManager.publishCRCPrintStart(order.orderId)
+                    
                     # 아두이노 PRINT 시작 명령
                     self.__cupDispenser.write("PRINT")
                     time.sleep(20)

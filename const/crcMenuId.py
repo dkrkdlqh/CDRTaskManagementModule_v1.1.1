@@ -25,6 +25,10 @@ class _CRCMenuId(object):
         return 1003
     
     @constant
+    def HOT_WATER() -> int:
+        return 1010
+    
+    @constant
     def BEER() -> int:
         return 3000
 CRCMenuId = _CRCMenuId()

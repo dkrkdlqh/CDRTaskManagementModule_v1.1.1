@@ -111,8 +111,8 @@ class TcpIPVar :
         try :
             data = self.__tcpClient.recv(recvSize)
             
-            if not data:
-                CDRLog.print(f"TCP/IP Read fail.")
+            if not data:            #상대방이 연결을 종료한 경우
+                CDRLog.print(f"TCP/IP Read fail: No data received.")
                 if self.reconnect():
                     CDRLog.print("TCP/IP 재연결 성공")
                     return self.read()            
@@ -124,7 +124,12 @@ class TcpIPVar :
                 CDRLog.Log({data.decode()})  #mini 임시 아두이노 테스트
                 return data.decode()
         
-        except Exception as e:
+        except socket.timeout:      #상대방이 연결을 유지하고 있지만 데이터를 보내지 않은 경우
+            CDRLog.Log("TCP/IP Read failed: Timeout.")
+
+            return ""
+    
+        except Exception as e:      #네트워크 오류 또는 소켓 문제
             CDRLog.print(f"TCP/IP Read failed: {e}")
             if self.reconnect():
                 CDRLog.print("TCP/IP 재연결 성공")

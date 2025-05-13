@@ -24,7 +24,7 @@ class CRCManager:
     
     def __init__(self, minOrderCnt : int = 1):
         self.__crcComm      : MqttVar = None
-        self.orderHandler               :OrderHandler = OrderHandler()
+        self.orderHandler   :OrderHandler = OrderHandler()
         self.__storeId      : int = -1
         self.__printerId    : int = -1
  
@@ -35,7 +35,7 @@ class CRCManager:
         self.__printerState  : str        = "" # 프린터 상태
         #TPM에서 사용할때는 __minOrderCount = 1로 사용하여, 주문을 한개씩만 받아서 처리하도록 한다.
         self.__minOrderCount : int = minOrderCnt 
-
+        self.__completedOrderList : list[int] = [] # 완료된 주문 리스트
 
     def startCRCCommunication(self,  storeId : int, printerId : int):
         """
@@ -113,15 +113,21 @@ class CRCManager:
                         orderNumber = order[CRCKey.KEY_ORDER_NUMBER]
                         phone = order[CRCKey.KEY_PHONE][7:] #끝 4자리 숫자값 
                         printType = order[CRCKey.KEY_PRINT_TYPE]
-
-                        for menuId in orderDetails:
-                            self.orderHandler.addOrderItem(
-                                orderId=orderId,
-                                orderNumber=orderNumber,
-                                menuId=menuId,
-                                orderPhoneInfo=phone,
-                                mbrushPrintType=printType
-                            )
+                        
+                        if self.checkCompletedOrder(orderId) == True: #orderId가 이미 완료된 주문번호 리스트에 있는 경우
+                            self.publishCRCOrderComplete(orderId)
+                            break
+                        
+                        if self.orderHandler.getOrderItemById(orderId) == None :  # 주문 리스트에 주문이 없는 경우에만 추가
+                            for menuId in orderDetails:
+                                self.orderHandler.addOrderItem(
+                                    orderId=orderId,
+                                    orderNumber=orderNumber,
+                                    menuId=menuId,
+                                    orderPhoneInfo=phone,
+                                    mbrushPrintType=printType
+                                )
+                                
                         self.orderHandler.listOrderItems()
                         CDRLog.print(f"Order received: ID={orderId}, Details={orderDetails}, Number={orderNumber}, Phone={phone}, PrintType={printType}")
                         #time.sleep(1)
@@ -206,6 +212,7 @@ class CRCManager:
                     self.orderHandler.removeOrderItem(order) # 완료된 주문 삭제
                     if self.orderHandler.getOrderItemById(orderId_Check) == None:
                         self.publishCRCOrderComplete(orderId_Check) # 완료 메세지 전송
+                        self.__addCompletedOrder(orderId_Check) # 완료된 주문 리스트에 추가
                         
                 # 주문이 self.__minOrderCount개 미만일 경우에만 주문 요청 
                 if self.orderHandler.getOrderCount() < self.__minOrderCount: 
@@ -213,8 +220,19 @@ class CRCManager:
             
         CDRLog.print("============ __orderWatchdogThreadHandler terminated...")      
         
-        
-        
+    def __addCompletedOrder(self, orderId: int):
+        '''
+        완료된 주문번호를 리스트에 추가하고 최대 5개까지만 유지
+        '''
+        self.__completedOrderList.append(orderId)
+        if len(self.__completedOrderList) > 5:
+            self.__completedOrderList.pop(0)  # 가장 오래된 주문번호 제거
+      
+    def checkCompletedOrder(self, orderId: int) -> bool:
+        """
+        완료된 주문 리스트에 특정 주문번호가 있는지 확인
+        """
+        return orderId in self.__completedOrderList    
         
     def publishCRCOrderComplete(self,  orderId : int):
         '''

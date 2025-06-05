@@ -25,7 +25,7 @@ class CDRLog:
 
         self.logger = logging.getLogger(log_file)  # 로거 이름을 파일명으로 설정
         self.logger.setLevel(level)
-
+        self.logger.propagate = False
         # 이미 핸들러가 추가된 경우 중복 추가 방지
         if not self.logger.hasHandlers():
             # 기본 로그 포맷 설정

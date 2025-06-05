@@ -35,7 +35,7 @@ class TPMCommManager():
         
 
 
-    def openServer(self, ip:str = "localhost", port:int = 200):
+    def openServer(self, ip:str = "0.0.0.0", port:int = 200):  #openServer(self, ip:str = "localhost", port:int = 200):
         '''
         ### 서버 오픈
         '''
@@ -99,6 +99,7 @@ class TPMCommManager():
     #     ### TPM과 통신 처리 전용 쓰레드 
     #     '''
     #     self.__socketServer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #     
     #     self.__socketServer.bind((ip, port))
     #     self.__socketServer.listen(1)
     #     CDRLog.print(f"Server opened on {ip}:{port}")
@@ -146,9 +147,11 @@ class TPMCommManager():
         '''
         ### TPM과 통신 처리 전용 쓰레드 
         '''
-
+      
         self.__socketServer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.__socketServer.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) #250528 소켓 재사용 옵션 설정
         self.__socketServer.bind((ip, port))
+    
         self.__socketServer.listen(1)
         CDRLog.print(f"Server opened on {ip}:{port}")
 

@@ -318,7 +318,7 @@ class CRCManager:
                             }
         
         self.__crcComm.write(CRCKey.TOPIC_MBRUSH_RMS, json.dumps(printMsg))
-        CDRLog.print(f"write MQTT : {printMsg}")   # mini test
+        CDRLog.print(f"write MQTT : {printMsg}") 
 
     def publishCRCOrderRequest(self,  Quantity : int):
         reqMsgData = {
@@ -343,7 +343,7 @@ class CRCManager:
         msg_str = json.dumps(msg_print)
         
         self.__crcComm.write("print/rms",msg_str)
-        CDRLog.print(f"write MQTT : {msg_print}")   # mini test
+        CDRLog.print(f"write MQTT : {msg_print}")  
         self.__printerState = None
 
     #getPrintState

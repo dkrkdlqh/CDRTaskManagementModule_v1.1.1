@@ -168,7 +168,7 @@ class TPMCommManager():
                 self.__isRunningServer  = True
                 break
 
-            except TimeoutError:
+            except socket.timeout:
                 continue
 
 

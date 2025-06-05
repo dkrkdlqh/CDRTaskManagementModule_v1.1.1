@@ -19,6 +19,7 @@ from variable.bleVar import BLEVar
 from variable.melsecPLCVar import MelsecPLCVar
 from variable.modbusTCPVar import ModbusTCPVar
 from variable.mqttVar import MqttVar
+from variable.fastechVar import FastechVar
 
 
 from data.sysFuncData import SysFuncData
@@ -194,9 +195,28 @@ class TPMSysFuncManager():
                                                     Param(SysFuncKeyword.TRAY_ID, VarType.TYPE_STR),
                                                     Param(SysFuncKeyword.ORDER_ID, VarType.TYPE_INT)], 
                                                 []))
-        
-
-
+        #250522
+        self.__sysfuncList.append(SysFuncData(  SysFuncName.FASTECH_SERVO_ON, 
+                                                    [Param(SysFuncKeyword.FASTECH_VAR, VarType.TYPE_FASTECH_MOTOR)], 
+                                                []))
+        self.__sysfuncList.append(SysFuncData(  SysFuncName.FASTECH_SERVO_OFF,
+                                                    [Param(SysFuncKeyword.FASTECH_VAR, VarType.TYPE_FASTECH_MOTOR)], 
+                                                []))
+        self.__sysfuncList.append(SysFuncData(  SysFuncName.FASTECH_MOVE_VELOCITY,
+                                                    [Param(SysFuncKeyword.FASTECH_VAR, VarType.TYPE_FASTECH_MOTOR),
+                                                    Param(SysFuncKeyword.VELOCITY, VarType.TYPE_INT), 
+                                                    Param(SysFuncKeyword.DIRECTION, VarType.TYPE_INT)],
+                                                []))
+        self.__sysfuncList.append(SysFuncData(  SysFuncName.FASTECH_MOVE_STOP,
+                                                    [Param(SysFuncKeyword.FASTECH_VAR, VarType.TYPE_FASTECH_MOTOR)], 
+                                                []))
+        self.__sysfuncList.append(SysFuncData(  SysFuncName.FASTECH_MOVE_ORG,
+                                                    [Param(SysFuncKeyword.FASTECH_VAR, VarType.TYPE_FASTECH_MOTOR)], 
+                                                []))
+        self.__sysfuncList.append(SysFuncData(  SysFuncName.FASTECH_GET_SIGNAL,          
+                                                    [Param(SysFuncKeyword.FASTECH_VAR, VarType.TYPE_FASTECH_MOTOR),
+                                                     Param(SysFuncKeyword.SIGNAL_INDEX, VarType.TYPE_INT)], 
+                                                [Param(SysFuncKeyword.STATE_CODE, VarType.TYPE_INT)]))
 
     # ============================================================================================================
     # ============================================================================================================
@@ -1043,4 +1063,48 @@ class TPMSysFuncManager():
 
         UIComm.write(msg,2)
         #CDRLog.print(f'Order_UI << Tray : {slot}  Order : {ordernum}')
+        
+    #250522
+    def fastech_ServoOn(self, fastechcomm:FastechVar) :
+        '''
+        시스템 함수 : Fastech Servo On
+        '''
+        fastechcomm.setServoOn()
+        
+    def fastech_ServoOff(self, fastechcomm:FastechVar) :
+        ''' 
+        시스템 함수 : Fastech Servo Off
+        '''
+        fastechcomm.setServoOff()
+        
+    def fastech_MoveVelocity(self, fastechcomm:FastechVar, dir :int, velocity:int) :
+        '''
+        시스템 함수 : Fastech Move Velocity
+        '''
+        fastechcomm.moveVelocity(dir, velocity)
+        
+    def fastech_MovePulse(self, fastechcomm:FastechVar, pulse :int, velocity:int) :
+        '''
+        시스템 함수 : Fastech Move Pulse
+        '''
+        fastechcomm.moveIncPos(pulse, velocity)
+    def fastech_MoveStop(self, fastechcomm:FastechVar) :
+        '''
+        시스템 함수 : Fastech Move Stop
+        '''
+        fastechcomm.moveStop()
+        
+    def fastech_MoveOrigin(self, fastechcomm:FastechVar) :
+        '''
+        시스템 함수 : Fastech Move Origin
+        '''
+        fastechcomm.moveOrigin()
+        
+    def fastech_GetIOInput(self, fastechcomm:FastechVar, Index : int) -> int:
+        '''
+        시스템 함수 : Fastech Get IO Input
+        '''
+        return fastechcomm.getIoInput(Index)
+        
+        
 

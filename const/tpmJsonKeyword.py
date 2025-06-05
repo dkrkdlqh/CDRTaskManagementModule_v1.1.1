@@ -349,6 +349,15 @@ class _TPMJsonKeyword():
     @constant
     def PARAM_VALUE() -> str:
         return "paramValue"
+    
+    #250522
+    @constant
+    def VAR_BOARD_ID() -> int:
+        return "varFastechMotorId"
+    
+    @constant
+    def VAR_BOARD_TYPE() -> str:
+        return "varFastechMotorBoardType"
 
 
 TPMJsonKeyword = _TPMJsonKeyword()

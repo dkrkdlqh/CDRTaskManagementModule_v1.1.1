@@ -134,6 +134,27 @@ class _SysFuncName():
     @constant
     def ORDER_UI_SENDDATA() -> str:
         return "order_UI_SendData"
+    
+    #250522
+    @constant
+    def FASTECH_SERVO_ON() -> str:
+        return "fastechServoOn"
+    @constant
+    def FASTECH_SERVO_OFF() -> str:
+        return "fastechServoOff"
+    @constant
+    def FASTECH_MOVE_VELOCITY() -> str:
+        return "fastechMoveVelocity"
+    @constant
+    def FASTECH_MOVE_STOP() -> str:
+        return "fastechMoveStop"
+    @constant
+    def FASTECH_MOVE_ORG() -> str:
+        return "fastechMoveOrigin"
+    @constant
+    def FASTECH_GET_SIGNAL() -> str:
+        return "fastechGetIOSignal"
+    
 
     
 SysFuncName = _SysFuncName()

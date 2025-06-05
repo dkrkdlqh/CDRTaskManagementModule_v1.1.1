@@ -22,6 +22,7 @@ from variable.melsecPLCVar import MelsecPLCVar
 from variable.modbusTCPVar import ModbusTCPVar
 from variable.mqttVar import MqttVar
 from variable.primitiveVar import PrimitiveVar
+from variable.fastechVar import FastechVar
 
 from cdrutils.log import CDRLog
 from cdrutils.cdrUtil import CDRUtil
@@ -466,6 +467,18 @@ class TPMProgramManager():
                     while MainData.isRunningTPMProgram == True:
                         if melsecPLCVar.isConnected() == True:
                             break
+                #250522
+                elif varType == ProgramVarType.TYPE_FASTECH_MOTOR:
+                    
+                    varName         :str        = varNodeData[TPMKey.VAR_NAME]
+                    varIPAddr       :str        = varNodeData[TPMKey.VAR_IP_ADDR]
+                    varFastechMotorId      :int        = int(varNodeData[TPMKey.VAR_BOARD_ID])
+                    varFastechMotorBoardType    :str        = varNodeData[TPMKey.VAR_BOARD_TYPE]
+                    
+                    fastechVar: FastechVar      = FastechVar(self.commVarEventCallback)
+                    self.__userVarList[varName] = fastechVar
+                    fastechVar.connect(varIPAddr, varFastechMotorId, varFastechMotorBoardType)
+     
 
                 elif varType == ProgramVarType.TYPE_BLE:
                     
@@ -501,6 +514,11 @@ class TPMProgramManager():
 
                     # 통신 변수 생성 및 저장 후, 연결 진행
                     mqttVar.connect(varIPAddr, varIPPort, varUserName, varUserPW, topics)
+                    
+                    # 통신 연결 성공 후, 다음 단계 진행
+                    while MainData.isRunningTPMProgram == True:
+                        if mqttVar.isConnected() == True:
+                            break
 
                 elif varType == 'dhgripper' :
                     
@@ -910,7 +928,7 @@ class TPMProgramManager():
                         time.sleep(0.1)
                         CDRLog.print("modbus 변수 read 실패")
                     else:
-                        print(f"===== read value is : {readModbusDataValue}")
+                        #print(f"===== read value is : {readModbusDataValue}")
                         # 저장 변수가 리스트 타입인 경우,
                         if saveVarType == list:
                             saveVar.setValue(readModbusDataValue)
@@ -1896,9 +1914,9 @@ class TPMProgramManager():
                         finFeedback                             = finFeedbackValueVar.getValue()
             
             self.__tpmSysFuncManager.sendFRModbusCmd(frModbusComm, cmdMemoryAddr, cmdValue, feedbackMemoryAddr, startFeedback, finFeedback)
-            
 
-        elif funcName == SysFuncName.SEND_PRINT_INFO:
+
+        elif funcName == SysFuncName.SEND_PRINT_DATA:#SEND_PRINT_INFO:
 
             orderMenuId         :int            = -1    
             orderId           :int            = -1
@@ -2008,7 +2026,82 @@ class TPMProgramManager():
                     
 
             self.__tpmSysFuncManager.order_UI_SendData(tcpIPVar, TrayID, Data)    
+        
+        elif funcName == SysFuncName.FASTECH_SERVO_ON:
+            fastechVar    :FastechVar = None
+            for param in paramValueList:
+                if param[TPMKey.PARAM_NAME] == SysFuncKeyword.FASTECH_VAR:
+                    fastechVar = self.__userVarList[param[TPMKey.PARAM_VALUE]]
             
+            self.__tpmSysFuncManager.fastech_ServoOn(fastechVar)
+            
+        elif funcName == SysFuncName.FASTECH_SERVO_OFF:
+            fastechVar    :FastechVar = None
+            for param in paramValueList:
+                if param[TPMKey.PARAM_NAME] == SysFuncKeyword.FASTECH_VAR:
+                    fastechVar = self.__userVarList[param[TPMKey.PARAM_VALUE]]
+            
+            self.__tpmSysFuncManager.fastech_ServoOff(fastechVar)
+            
+            
+        elif funcName == SysFuncName.FASTECH_MOVE_VELOCITY:
+            fastechVar    :FastechVar = None
+            value_Velocity  = None
+            value_direction  = None
+            
+            for param in paramValueList:
+                if param[TPMKey.PARAM_NAME] == SysFuncKeyword.FASTECH_VAR:
+                    fastechVar = self.__userVarList[param[TPMKey.PARAM_VALUE]]     
+                
+                elif param[TPMKey.PARAM_NAME] == SysFuncKeyword.DIRECTION:
+                    if param["assignType"] == ValueAssignType.INPUT:  
+                        value_direction                     = param[TPMKey.PARAM_VALUE]
+
+                    elif param["assignType"] == ValueAssignType.VAR:    
+                        paramValueVar  :PrimitiveVar   = self.__userVarList[param[TPMKey.PARAM_VALUE]]
+                        value_direction                     = paramValueVar.getValue()    
+                       
+                elif param[TPMKey.PARAM_NAME] == SysFuncKeyword.VELOCITY:
+                    if param["assignType"] == ValueAssignType.INPUT:  
+                        value_Velocity                     = param[TPMKey.PARAM_VALUE]
+                        
+                    elif param["assignType"] == ValueAssignType.VAR:    
+                        paramValueVar  :PrimitiveVar   = self.__userVarList[param[TPMKey.PARAM_VALUE]]
+                        value_Velocity                     = paramValueVar.getValue()
+
+            self.__tpmSysFuncManager.fastech_MoveVelocity(fastechVar, value_direction, value_Velocity)
+            
+        elif funcName == SysFuncName.FASTECH_MOVE_STOP:
+            fastechVar    :FastechVar = None
+            for param in paramValueList:
+                if param[TPMKey.PARAM_NAME] == SysFuncKeyword.FASTECH_VAR:
+                    fastechVar = self.__userVarList[param[TPMKey.PARAM_VALUE]]
+            
+            self.__tpmSysFuncManager.fastech_MoveStop(fastechVar)
+            
+        elif funcName == SysFuncName.FASTECH_MOVE_ORG:
+            fastechVar    :FastechVar = None
+            for param in paramValueList:
+                if param[TPMKey.PARAM_NAME] == SysFuncKeyword.FASTECH_VAR:
+                    fastechVar = self.__userVarList[param[TPMKey.PARAM_VALUE]]
+            
+            self.__tpmSysFuncManager.fastech_MoveOrigin(fastechVar)
+        elif funcName == SysFuncName.FASTECH_GET_SIGNAL:
+            fastechVar    :FastechVar = None
+            value_Index               = None
+            for param in paramValueList:
+                if param[TPMKey.PARAM_NAME] == SysFuncKeyword.FASTECH_VAR:
+                    fastechVar = self.__userVarList[param[TPMKey.PARAM_VALUE]]
+                elif param[TPMKey.PARAM_NAME] == SysFuncKeyword.SIGNAL_INDEX:
+                    if param["assignType"] == ValueAssignType.INPUT:  
+                        value_Index                     = param[TPMKey.PARAM_VALUE]
+                            
+                    elif param["assignType"] == ValueAssignType.VAR:    
+                        paramValueVar  :PrimitiveVar   = self.__userVarList[param[TPMKey.PARAM_VALUE]]
+                        value_Index                     = paramValueVar.getValue()
+            
+            returnVar   :PrimitiveVar = self.__userVarList[returnValueList[0][TPMKey.RETURN_VALUE]] 
+            returnVar.setValue(self.__tpmSysFuncManager.fastech_GetIOInput(fastechVar,value_Index))
 
     # ============================================================================================================
     # ============================================================================================================

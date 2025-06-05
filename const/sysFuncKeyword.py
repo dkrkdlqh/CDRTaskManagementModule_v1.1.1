@@ -23,6 +23,22 @@ class _SysFuncKeyword(object):
     @constant
     def TCPIP_VAR() -> str:
         return "tcpIPVar"
+    #250522
+    @constant
+    def FASTECH_VAR() -> str:
+        return "fastechVar"
+    
+    @constant
+    def VELOCITY() -> str:
+        return "velocity"
+    
+    @constant
+    def DIRECTION() -> str:
+        return "direction"
+    
+    @constant
+    def SIGNAL_INDEX() -> str:
+        return "signalIndex"    
     
     @constant
     def DATA() -> str:

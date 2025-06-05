@@ -63,6 +63,15 @@ class _ProgramVarType(object):
     @constant
     def TYPE_BLE() -> str:
         return "BLE"
-    
+    #250522
+    @constant
+    def TYPE_FASTECH_MOTOR() -> str:
+        return "FASTECH MOTOR"
+    @constant
+    def TYPE_DIRECTION() -> str:
+        return "Direction"
+    @constant   
+    def TYPE_VELOCITY() -> str:
+        return "Velocity"
 
 ProgramVarType = _ProgramVarType()

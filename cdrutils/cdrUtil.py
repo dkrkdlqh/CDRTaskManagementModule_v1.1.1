@@ -63,7 +63,6 @@ class CDRUtil:
         from variable.melsecPLCVar import MelsecPLCVar
         from variable.modbusTCPVar import ModbusTCPVar
         from variable.mqttVar import MqttVar
-        from variable.fastechVar import FastechVar
 
         if commVarType == TcpIPVar:
             return "TcpIpVar"

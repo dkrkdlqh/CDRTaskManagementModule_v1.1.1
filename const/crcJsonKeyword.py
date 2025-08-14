@@ -18,7 +18,13 @@ class _CRCJsonKeyword():
     @constant
     def TOPIC_CRC_RMS() -> str:
         return "crc/rms"
-    
+    #250626
+    @constant
+    def TOPIC_SERV_CSR() -> str:
+        return "crc/serving/mini"#"crc/serving/mini"
+    @constant 
+    def TOPIC_SERV_RMS() -> str:   
+        return "crc/serving/rms"#"crc/serving/rms"
     @constant
     def TOPIC_MBRUSH_PRINTER() -> str:
         return "print/mbrush"
@@ -47,6 +53,14 @@ class _CRCJsonKeyword():
     @constant
     def KEY_STATUS_ID() -> str:
         return "statusId"
+    #250627
+    @constant
+    def KEY_STATUS() -> str:
+        return "status"
+    
+    @constant
+    def KEY_VALUE() -> str:
+        return "value"
     
     @constant
     def KEY_ORDER_LIST() -> str:

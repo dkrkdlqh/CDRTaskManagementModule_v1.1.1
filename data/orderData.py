@@ -11,8 +11,13 @@ class OrderItem:
         self.orderPhoneInfo   = orderPhoneInfo
         self.mbrushPrintType  = mbrushPrintType
         self.menuId = menuId
+        
         #주문 진행 상태 -1: 없음, 0: 컵 준비, 1: 추출 시작, 2: 추출 완료, 3: 픽업 가능
         self.orderState = -1
+        # '''mini 임시 test'''
+        # self.orderState = 0
+        # ''''''
+        
         # 메뉴 제조 장비 -1 : 없음, 1 : 1번 드롱기, 2 : 2번 드롱기
         self.makeMachine = -1
 
@@ -90,15 +95,29 @@ class OrderHandler:
         # 첫 번째 주문 반환 (없으면 None)
         return filtered_orders[0] if filtered_orders else None
     
-    def getOrderItemByIdMenuState(self, orderId: int, menuId: int, state: int) -> OrderItem:
+    # def getOrderItemByIdMenuState(self, orderId: int, menuId: int, state: int) -> OrderItem:
+    #     """
+    #     특정 orderId, menuId, orderState를 가진 OrderItem을 반환합니다. 없으면 None을 반환합니다.
+    #     """
+    #     return next(
+    #         (item for item in self.__OrderItems if item.orderId == orderId and item.menuId == menuId and item.orderState == state),
+    #         None
+    #     )
+    def getOrderItemByIdAndState(self, orderId: int, state: int) -> OrderItem:
         """
-        특정 orderId, menuId, orderState를 가진 OrderItem을 반환합니다.
-        조건에 맞는 항목이 없으면 None을 반환합니다.
+        특정 orderId와 state를 모두 만족하는 OrderItem을 반환합니다. 없으면 None을 반환합니다.
+        """
+        return next((item for item in self.__OrderItems if item.orderId == orderId and item.orderState == state), None)
+    
+    def getOrderItemByIdMenuStateExcept(self, orderId: int, except_state: int) -> OrderItem:
+        """
+        특정 orderId를 가지면서 except_state가 아닌 orderState를 가진 OrderItem을 반환합니다. 없으면 None을 반환합니다.
         """
         return next(
-            (item for item in self.__OrderItems if item.orderId == orderId and item.menuId == menuId and item.orderState == state),
+            (item for item in self.__OrderItems if item.orderId == orderId  and item.orderState != except_state),
             None
         )
+
 
     def getOrderCount(self) -> int:
         """

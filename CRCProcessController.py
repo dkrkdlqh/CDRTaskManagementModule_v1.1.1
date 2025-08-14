@@ -28,9 +28,9 @@ from manager.CRCManager import CRCManager
 
 
 
-STORE_ID                 :int = 6
-PRINTER_ID               :int = 6
-MIN_ORDER_CNT           :int = 4
+STORE_ID                    :int = 6
+PRINTER_ID                  :int = 6
+MIN_ORDER_CNT               :int = 4
 
 class CRCProcessController():
     '''
@@ -43,14 +43,18 @@ class CRCProcessController():
     def __init__(self):
         CDRLog.print("[0%] var init Start.")
 		# config 변수 선언 ------------------------
-        self.__railCount                  :int        = 3
+        self.__railCount                :int        = 3
         self.__curRailIndex             :int        = 0
-        self.__FRCmdAddr              :int        = 101
-        self.__FRFeedbackAddr         :int        = 100
-        self.__FRStartFeedback        :int        = 1
-        self.__FRFinFeedback          :int        = 0
-        
-        
+        self.__FRCmdAddr                :int        = 101
+        self.__FRFeedbackAddr           :int        = 100
+        self.__FRStartFeedback          :int        = 1
+        self.__FRFinFeedback            :int        = 0
+        #250626
+        self.__CSRHolderCount           :int        = 2 # CSR 홀더 개수
+        self.__CSRHolderIndex           :int        = 0 # CSR 홀더 인덱스
+        self.__CSRHolderOrderId         :int        = -1 # CSR 홀더에 담긴 주문 ID
+        self.__CSRHolderMenuIds                     = []
+        self.__CSRUse                   :bool       = False # CSR 홀더 사용 여부, True면 CSR 홀더 사용, False면 픽업대로 컵 이동
 		# 일반 변수 선언 --------------------------
         #self.__orderId                  :int        = -1
         #self.__menuId                   :int        = -1
@@ -95,22 +99,16 @@ class CRCProcessController():
         self.__cupDispenser        :TcpIPVar = TcpIPVar(CDRUtil.commVarEventCallback, name = "Cup Dispenser")
         self.__cupDispenser.connect("192.168.3.111", 60000)
   
-        ##self.__crcComm              :MqttVar = MqttVar(CDRUtil.commVarEventCallback)
-        ##self.__crcComm.connect("b85b26e22ac34763bd9cc18d7f655038.s2.eu.hivemq.cloud", 8883, "admin", "201103crcBroker", ["crc/jts", "print/mbrush"])
-        ##self.__crcComm.connect("b85b26e22ac34763bd9cc18d7f655038.s2.eu.hivemq.cloud", 8883, "admin", "201103crcBroker", [f"crc/server/{STORE_ID}", "print/mbrush"])
-        ##self.__crcComm.setSubscribeFilter(MqttFilterData(CRCKey.KEY_STORE_ID, self.__tpmSysFuncManager.__storeId))
+
         self.__crcManager = CRCManager(minOrderCnt=MIN_ORDER_CNT)
-        
+        self.__crcManager.setUseServingRobot(self.__CSRUse)
         self.__crcManager.startCRCCommunication(STORE_ID, PRINTER_ID)        
 
         # 로봇 통신 변수 선언
         self.__FR5Comm           :ModbusTCPVar = ModbusTCPVar(CDRUtil.commVarEventCallback, name = "FR5")
         self.__FR5Comm.connect("192.168.3.100", 502)
+        self.__FR5Comm.write(ModbusFuncCode.WRITE_MULTI_REGISTERS, 100, [1])
 
-        # self.__DHGripperComm    :TcpIPVar = TcpIPVar(self.commVarEventCallback)
-        # self.__DHGripperComm.connect("192.168.3.160", 5000)
-        # self.__tpmSysFuncManager.initDHGripperVar(self.__DHGripperComm)    
- 
         
         CDRLog.print("[70%] Comm init Complete.")
         while True:
@@ -149,6 +147,59 @@ class CRCProcessController():
 
             if MainData.isRunningTPMProgram == False:
                 break
+
+            ########### ORDER_STATE_BREW_START 상태인 주문 가져오기#########################################################    
+            order = self.__crcManager.orderHandler.getOrderItemByState(self.__crcManager.ORDER_STATE_BREW_START)
+            if order :
+                if order.makeMachine == 1 and self.__delonghi01Status == DelonghiState.READY:
+                    # 제조 완료료 상태로 변경
+                    self.__crcManager.orderHandler.updateOrderState(order, self.__crcManager.ORDER_STATE_BREW_COMPLETE)
+                    continue
+                elif order.makeMachine == 2 and self.__delonghi02Status == DelonghiState.READY:
+                    # 제조 완료료 상태로 변경
+                    self.__crcManager.orderHandler.updateOrderState(order, self.__crcManager.ORDER_STATE_BREW_COMPLETE)
+                    continue
+               
+                # 테스트용
+                # time.sleep(5)
+                # CDRLog.print('ORDER_STATE_BREW_COMPLETE')
+                # self.__crcManager.orderHandler.updateOrderState(order, self.__crcManager.ORDER_STATE_BREW_COMPLETE)
+                # continue
+                
+                               
+
+            ########## ORDER_STATE_BREW_COMPLETE 상태인 주문 가져오기########################################################    
+            if self.__CSRUse == False:
+
+                order = self.__crcManager.orderHandler.getOrderItemByState(self.__crcManager.ORDER_STATE_BREW_COMPLETE)
+                if order :
+                    if order.makeMachine in [1, 2]:
+                        #250626
+                        self.__moveCupFromMachineToTray(order.makeMachine, self.__curRailIndex)
+                        self.__crcManager.orderHandler.updateOrderState(order, self.__crcManager.ORDER_STATE_PICKUP_ENABLE)
+                        continue
+            else : 
+                          
+                if self.__CSRHolderOrderId == -1 : # CSR 홀더에 먼저 담긴 주문이 없으면
+                    order = self.__crcManager.orderHandler.getOrderItemByState(self.__crcManager.ORDER_STATE_BREW_COMPLETE)
+                else :   # CSR 홀더에 먼저 담긴 주문이 있으면
+                    order = self.__crcManager.orderHandler.getOrderItemByIdAndState(self.__CSRHolderOrderId, self.__crcManager.ORDER_STATE_BREW_COMPLETE)
+                    
+                if order :
+                    if order.makeMachine in [1, 2]:                    
+                        #서빙로봇이 대기중인지 확인
+                        if self.__crcManager.getCRCServingState() == self.__crcManager.SERVING_STATE_IDLE:
+                            self.__CSRHolderOrderId = order.orderId
+                            self.__CSRHolderMenuIds.append(order.menuId)
+                            self.__moveCupFromMachineToCSR(order.makeMachine, self.__CSRHolderIndex)
+                            self.__crcManager.orderHandler.updateOrderState(order, self.__crcManager.ORDER_STATE_DELIVERY_READY)
+                            self.__CheckServingHolder()          
+                        # else :
+                        #     CDRLog.print(f"Serving Robot is busy... {self.__crcManager.getCRCServingState()}")
+       
+                            continue
+                        
+                        
             ########### ORDER_STATE_CUP_READY 상태인 주문 가져오기#########################################################
             order = self.__crcManager.orderHandler.getOrderItemByState(self.__crcManager.ORDER_STATE_CUP_READY)
             if order :
@@ -172,52 +223,7 @@ class CRCProcessController():
                 # self.__crcManager.orderHandler.updateOrderState(order, self.__crcManager.ORDER_STATE_BREW_START)
                 # continue
 
-            ########### ORDER_STATE_BREW_START 상태인 주문 가져오기#########################################################    
-            order = self.__crcManager.orderHandler.getOrderItemByState(self.__crcManager.ORDER_STATE_BREW_START)
-            if order :
-                if order.makeMachine == 1 and self.__delonghi01Status == DelonghiState.READY:
-                    # 제조 완료료 상태로 변경
-                    self.__crcManager.orderHandler.updateOrderState(order, self.__crcManager.ORDER_STATE_BREW_COMPLETE)
-                    continue
-                elif order.makeMachine == 2 and self.__delonghi02Status == DelonghiState.READY:
-                    # 제조 완료료 상태로 변경
-                    self.__crcManager.orderHandler.updateOrderState(order, self.__crcManager.ORDER_STATE_BREW_COMPLETE)
-                    continue
-               
-                # 테스트용
-                # time.sleep(5)
-                # CDRLog.print('ORDER_STATE_BREW_COMPLETE')
-                # self.__crcManager.orderHandler.updateOrderState(order, self.__crcManager.ORDER_STATE_BREW_COMPLETE)
-                # continue
-                
-                               
-            ########## ORDER_STATE_BREW_COMPLETE 상태인 주문 가져오기########################################################    
-            order = self.__crcManager.orderHandler.getOrderItemByState(self.__crcManager.ORDER_STATE_BREW_COMPLETE)
-            if order :
-                if order.makeMachine in [1, 2]:
-                    self.__moveCupFromMachineToTray(order.makeMachine, self.__curRailIndex)
-                    self.__crcManager.orderHandler.updateOrderState(order, self.__crcManager.ORDER_STATE_PICKUP_ENABLE)
-                    continue
-                #픽업대A 비어있으면
-                #  if self.__hasCupOnPickupATray == 0:
-                #      if order.MakeMachine == 1 :
-                #          self.__moveCupFromMachineToTray(1, 1) # 1번드롱기에서 제조한 커피를 픽업대A에
-                #픽업대B 비어있으면
-                #픽업대C 비어있으면
-                #픽업대D 비어있으면
-                # 제조 완료 상태로 변경
-                
-                # # 테스트용 
-                # time.sleep(5)
-                # CDRLog.print('ORDER_STATE_PICKUP_ENABLE')
-                # self.__crcManager.orderHandler.updateOrderState(order, self.__crcManager.ORDER_STATE_PICKUP_ENABLE)
-        
-                # continue
-            
 
-
-            
-            
 
 
 
@@ -225,6 +231,41 @@ class CRCProcessController():
 
             
         CDRLog.print("============ __drinkMakingThread terminated...")
+        
+        
+    def __CheckServingHolder(self):
+        '''
+        ### 1.CSR 홀더가 가득 찼는지 확인하고, 가득 찼으면 serving 명령을 보낸다.
+        ### 2.현재 주문번호에 남은 음료가 있는지 확인하고, 없으면 serving 명령을 보낸다.
+        '''
+        self.__CSRHolderIndex += 1
+        
+
+        remainOrder = self.__crcManager.orderHandler.getOrderItemByIdAndState(self.__CSRHolderOrderId, self.__crcManager.ORDER_STATE_BREW_START) or \
+                      self.__crcManager.orderHandler.getOrderItemByIdAndState(self.__CSRHolderOrderId, self.__crcManager.ORDER_STATE_BREW_COMPLETE) or \
+                      self.__crcManager.orderHandler.getOrderItemByIdAndState(self.__CSRHolderOrderId, self.__crcManager.ORDER_STATE_CUP_READY)
+        
+        #홀더가 가득 찼는지 확인
+        if self.__CSRHolderIndex >= self.__CSRHolderCount: 
+            # serving 명령 보내기
+            self.__crcManager.publishCSRDeliveryRequest(self.__CSRHolderOrderId,self.__CSRHolderMenuIds)
+            self.__crcManager.orderHandler.updateOrderStateByOrderIDAndState(self.__CSRHolderOrderId, self.__crcManager.ORDER_STATE_DELIVERY_READY, self.__crcManager.ORDER_STATE_PICKUP_ENABLE)
+            self.__CSRHolderIndex = 0                  
+            self.__CSRHolderOrderId = -1 
+            self.__CSRHolderMenuIds = []
+        #현재 주문번호에 제조중 or 제조대기인 음료가 있는지 확인
+        elif remainOrder is None:
+            # serving 명령 보내기
+            self.__crcManager.publishCSRDeliveryRequest(self.__CSRHolderOrderId,self.__CSRHolderMenuIds)
+            self.__crcManager.orderHandler.updateOrderStateByOrderIDAndState(self.__CSRHolderOrderId, self.__crcManager.ORDER_STATE_DELIVERY_READY, self.__crcManager.ORDER_STATE_PICKUP_ENABLE)
+            self.__CSRHolderIndex = 0                  
+            self.__CSRHolderOrderId = -1 
+            self.__CSRHolderMenuIds = []
+        else :
+            CDRLog.print(f"CSR Holder is not full yet. Current Index : {self.__CSRHolderIndex}, Order Id : {self.__CSRHolderOrderId}, Menu Ids : {self.__CSRHolderMenuIds}")
+            CDRLog.print(f"Remain Order : {remainOrder.orderId}, Menu Id : {remainOrder.menuId}, State : {remainOrder.orderState}")
+
+        
         
     def __cupPrintThreadHandler(self):
         while True:
@@ -310,45 +351,6 @@ class CRCProcessController():
             time.sleep(1)
 
 
-    def __moveCupFromMachineToTray(self, FromIdx:int, ToIndex:int):
-        '''
-        ### 드롱기에서 컵을 픽업대로 이동
-        '''
-        #드롱기 1
-        if FromIdx == 1 and ToIndex == 0:
-            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 102, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
-            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 110, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
-            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 30, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
-        elif FromIdx == 1 and ToIndex == 1:
-            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 102, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
-            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 111, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
-            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 31, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
-        elif FromIdx == 1 and ToIndex == 2:
-            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 102, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
-            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 112, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
-            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 32, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
-            
-        #드롱기 2
-        elif FromIdx == 2 and ToIndex == 0:
-            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 202, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
-            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 210, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
-            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 30, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
-        elif FromIdx == 2 and ToIndex == 1:
-            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 202, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
-            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 211, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
-            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 31, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
-        elif FromIdx == 2 and ToIndex == 2:
-            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 202, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
-            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 212, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
-            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 32, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
-        else :
-            CDRLog.print(f"오류 : 잘못된 인덱스 값입니다. FromIdx : {FromIdx}, ToIndex : {ToIndex}")
-            
-        self.__moveToNextRail()
-            
-
-        
-
 
 
     def __moveCupFromDispenserToMachine(self, MenuId:int, makeMachine:int):
@@ -398,7 +400,74 @@ class CRCProcessController():
             self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 201, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
         
 
-
+    def __moveCupFromMachineToTray(self, FromIdx:int, ToIndex:int):
+        '''
+        ### 드롱기에서 컵을 픽업대로 이동
+        '''
+        #드롱기 1
+        if FromIdx == 1 and ToIndex == 0:
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 102, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 110, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 30, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+        elif FromIdx == 1 and ToIndex == 1:
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 102, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 111, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 31, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+        elif FromIdx == 1 and ToIndex == 2:
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 102, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 112, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 32, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+            
+        #드롱기 2
+        elif FromIdx == 2 and ToIndex == 0:
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 202, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 210, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 30, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+        elif FromIdx == 2 and ToIndex == 1:
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 202, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 211, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 31, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+        elif FromIdx == 2 and ToIndex == 2:
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 202, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 212, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 32, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+        else :
+            CDRLog.print(f"오류 : 잘못된 인덱스 값입니다. FromIdx : {FromIdx}, ToIndex : {ToIndex}")
+            
+        self.__moveToNextRail()
+            
+    def __moveCupFromMachineToCSR(self, FromIdx:int, ToIdx:int):
+        '''
+        # 드롱기에서 컵을 CSR로 이동
+        '''
+        #드롱기 1
+        if FromIdx == 1 and ToIdx == 0:
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 102, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 120, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 40, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+        
+        elif FromIdx == 1 and ToIdx == 1:
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 102, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 121, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 41, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+        
+        #드롱기 2
+        elif FromIdx == 2 and ToIdx == 0:
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 202, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 220, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 40, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)            
+        
+        elif FromIdx == 2 and ToIdx == 1:
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 202, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 221, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+            self.__tpmSysFuncManager.sendFRModbusCmd(self.__FR5Comm, self.__FRCmdAddr, 41, self.__FRFeedbackAddr, self.__FRStartFeedback, self.__FRFinFeedback)
+            
+            
+        else:
+            CDRLog.print(f"오류 : 잘못된 인덱스 값입니다. FromIdx : {FromIdx}")
+        
+        
+   
 
 
     def __moveToNextRail(self):
@@ -433,8 +502,12 @@ class CRCProcessController():
                 break
             
             elif key == Config.KEY_ORDERLIST_PRINT:
-                CDRLog.print("Current Order List")
+                CDRLog.print("@@ Current Order List @@")
                 self.__crcManager.orderHandler.listOrderItems()
+                if self.__CSRUse:
+                    CDRLog.print(f"@@ Current CSR Holder Order Id : {self.__CSRHolderOrderId}")
+                    CDRLog.print(f"@@ Current CSR Holder Menu Ids : {self.__CSRHolderMenuIds}")
+                    CDRLog.print(f"@@ Current Serving Robot State : {self.__crcManager.getCRCServingState()}")
 
 
         CDRLog.print("============ __keyInputThread terminated...")

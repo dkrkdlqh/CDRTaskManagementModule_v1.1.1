@@ -24,7 +24,8 @@ class FastechVar:
         self.EZI_AXISSTATUS = None
         
     def __del__(self) :
-
+        self.moveStop()  # 축의 이동을 중지
+        self.setServoOff()  # 서보를 끔
         self.close()
         CDRLog.print('FastechVar instance is deleted.')
         

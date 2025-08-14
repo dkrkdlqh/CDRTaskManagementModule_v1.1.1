@@ -41,36 +41,38 @@ class MqttVar :
 
 
     def connect(self, addr:str, port:int, userId:str, userPW:str, topics : list, filter:MqttFilterData = None):
-        
-        try :
-            
-            #self.__mqttTopics        :list                       = topics   
-            #self.__mqttFilter        :MqttFilterData             = filter
-            self.__mqttAddr = addr
-            self.__mqttPort = port
-            self.__mqttUserId = userId
-            self.__mqttUserPW = userPW
-            self.__mqttTopics = topics
+        max_retries = 5
+        retry_count = 0
 
+        while retry_count < max_retries: #250605
+            try:
+                self.__mqttAddr = addr
+                self.__mqttPort = port
+                self.__mqttUserId = userId
+                self.__mqttUserPW = userPW
+                self.__mqttTopics = topics
 
-            self.__mqttClient = paho.Client(paho.CallbackAPIVersion.VERSION2)
-            self.__mqttClient.tls_set(tls_version = ssl.PROTOCOL_TLS)
-            self.__mqttClient.username_pw_set(userId, userPW)
-            self.__mqttClient.on_connect        = self.onMQTTConnect
-            self.__mqttClient.on_disconnect     = self.onMQTTDisconnect
-            self.__mqttClient.on_subscribe      = self.onMQTTSubscribe
-            self.__mqttClient.on_message        = self.onMqttMsgCallback
-            
-            self.__mqttClient.connect(addr,port)
-            self.__mqttClient.loop_start()
+                self.__mqttClient = paho.Client(paho.CallbackAPIVersion.VERSION2)
+                self.__mqttClient.tls_set(tls_version=ssl.PROTOCOL_TLS)
+                self.__mqttClient.username_pw_set(userId, userPW)
+                self.__mqttClient.on_connect = self.onMQTTConnect
+                self.__mqttClient.on_disconnect = self.onMQTTDisconnect
+                self.__mqttClient.on_subscribe = self.onMQTTSubscribe
+                self.__mqttClient.on_message = self.onMqttMsgCallback
 
-        except :
-            
-            # 서버 연결 실패 -> 이벤트 발생
-            if MainData.isRunningTPMProgram == True and self.__eventCallback != None:
-                self.__eventCallback(Event.COMM_VAR_FAILED_TO_CONNECT, self)
+                self.__mqttClient.connect(addr, port)
+                self.__mqttClient.loop_start()
+                return  # 연결 성공 시 함수 종료
 
-            self.__mqttClient = None
+            except Exception as e:
+                retry_count += 1
+                CDRLog.print(f"MQTT 연결 실패 {retry_count}/{max_retries}: {e}")
+                time.sleep(2)  # 재시도 간격
+
+        # 5번 모두 실패 시 프로그램 종료 이벤트 발생
+        if MainData.isRunningTPMProgram and self.__eventCallback is not None:
+            self.__eventCallback(Event.COMM_VAR_FAILED_TO_CONNECT, self)
+        self.__mqttClient = None
         
     def disconnect(self):
         if self.__mqttClient is not None:
@@ -165,25 +167,19 @@ class MqttVar :
             self.__mqttClient.on_message = None
             self.__mqttClient = None
         CDRLog.print("MqttVar disconnect B")  # 로그용!
+        #250605
+        try:
+            CDRLog.print("MQTT 재연결 시도 1/1...")
+            self.connect(self.__mqttAddr, self.__mqttPort, self.__mqttUserId, self.__mqttUserPW, self.__mqttTopics)
+            if self.isConnected():
+                CDRLog.print("MQTT 재연결 성공")
+                return
+        except Exception as e:
+            CDRLog.print(f"MQTT 재연결 실패: {e}")
 
-        # 재연결 시도 로직
-        retry_count = 0
-        max_retries = 5
-        while retry_count < max_retries:
-            try:
-                CDRLog.print(f"MQTT 재연결 시도 {retry_count + 1}/{max_retries}...")
-                self.connect(self.__mqttAddr, self.__mqttPort, self.__mqttUserId, self.__mqttUserPW, self.__mqttTopics)
-                if self.isConnected():
-                    CDRLog.print("MQTT 재연결 성공")
-                    return
-            except Exception as e:
-                CDRLog.print(f"MQTT 재연결 실패: {e}")
-            retry_count += 1
-            time.sleep(5)  # 재연결 시도 간격 (5초)
-
-        # 프로그램 실행 중에 mqtt 통신이 disconnect 된 상황 -> 의도하지 않은 에러 상황으로 판단하여, 이벤트 발생! 
-        if MainData.isRunningTPMProgram == True and self.__eventCallback != None:
-            self.__eventCallback(Event.COMM_VAR_DISCONNECTED, self)
+            # 프로그램 실행 중에 mqtt 통신이 disconnect 된 상황 -> 의도하지 않은 에러 상황으로 판단하여, 이벤트 발생! 
+            if MainData.isRunningTPMProgram == True and self.__eventCallback != None:
+                self.__eventCallback(Event.COMM_VAR_DISCONNECTED, self)
 
 
 
